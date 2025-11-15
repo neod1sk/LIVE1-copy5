@@ -1,3 +1,220 @@
+.transition-overlay__sparkle {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 70%);
+  background-size: 120px 120px;
+  opacity: 0;
+  animation: transitionSparkle 1s ease forwards;
+  pointer-events: none;
+}
+.transition-overlay__starfield {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.transition-overlay__star {
+  position: absolute;
+  color: rgba(255, 235, 255, 0.85);
+  font-size: 1.6rem;
+  text-shadow: 0 0 12px rgba(255, 180, 255, 0.75);
+  animation: transitionTwinkle 1.2s ease-in-out infinite;
+}
+
+.transition-overlay__star--1 {
+  top: 24%;
+  left: 22%;
+  animation-delay: 0.05s;
+}
+
+.transition-overlay__star--2 {
+  top: 18%;
+  right: 20%;
+  font-size: 1.9rem;
+  animation-delay: 0.18s;
+}
+
+.transition-overlay__star--3 {
+  bottom: 22%;
+  left: 18%;
+  font-size: 1.4rem;
+  animation-delay: 0.32s;
+}
+
+.transition-overlay__star--4 {
+  bottom: 16%;
+  right: 26%;
+  font-size: 2rem;
+  animation-delay: 0.46s;
+}
+
+.transition-overlay__star--5 {
+  top: 42%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.2rem;
+  animation-delay: 0.62s;
+}
+
+.transition-overlay--result .transition-overlay__star {
+  color: rgba(255, 242, 219, 0.92);
+  text-shadow: 0 0 16px rgba(255, 220, 120, 0.88);
+}
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% -20%, rgba(255, 128, 228, 0.28), rgba(12, 6, 32, 0.96) 55%);
+  display: grid;
+  place-items: center;
+  z-index: 200;
+  backdrop-filter: blur(22px);
+  overflow: hidden;
+}
+
+.transition-overlay::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), rgba(0, 0, 0, 0));
+  animation: transitionGlow 1.2s ease forwards;
+  opacity: 0;
+}
+
+.transition-overlay[hidden] {
+  display: none;
+}
+
+.transition-overlay__content {
+  position: relative;
+  display: grid;
+  gap: 16px;
+  align-items: center;
+  justify-items: center;
+  padding: 48px;
+}
+
+.transition-overlay__title {
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: 0.32em;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(255, 212, 255, 0.55);
+  animation: transitionTitle 1s ease forwards;
+}
+
+.transition-overlay__subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  animation: transitionSubtitle 1s ease forwards;
+}
+
+.transition-overlay__burst {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45), rgba(80, 0, 120, 0) 70%);
+  opacity: 0;
+  transform: scale(0.6);
+  animation: transitionBurst 1.05s ease forwards;
+}
+
+.transition-overlay__sparkle {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 70%);
+  background-size: 120px 120px;
+  opacity: 0;
+  animation: transitionSparkle 1s ease forwards;
+  pointer-events: none;
+}
+
+.transition-overlay--result .transition-overlay__title {
+  font-size: 2rem;
+  letter-spacing: 0.2em;
+}
+
+.transition-overlay--result .transition-overlay__subtitle {
+  color: rgba(255, 255, 255, 0.55);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.32em;
+}
+
+.transition-overlay--result .transition-overlay__content {
+  padding: 40px;
+}
+
+.transition-overlay--result .transition-overlay__burst {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.45), rgba(120, 70, 255, 0) 70%);
+}
+.transition-overlay--result .transition-overlay__sparkle {
+  background-image: radial-gradient(rgba(255, 240, 200, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+  background-size: 140px 140px;
+}
+
+.transition-overlay--result .transition-overlay__star {
+  color: rgba(255, 242, 219, 0.92);
+  text-shadow: 0 0 16px rgba(255, 220, 120, 0.88);
+}
+
+@keyframes transitionBurst {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+@keyframes transitionTitle {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes transitionSubtitle {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 0.75;
+    transform: translateY(0);
+  }
+}
+
+@keyframes transitionSparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(0deg);
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(25deg);
+  }
+}
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Poppins:wght@600;700;800&display=swap");
 
 :root {
@@ -40,6 +257,7 @@ body {
   justify-content: center;
   align-items: stretch;
   font-family: var(--font-base);
+  touch-action: pan-x pan-y;
 }
 
 body.scroll-lock {
@@ -175,6 +393,8 @@ html[lang="ko"] .fever__content h2 {
   margin: 0 0 8px;
   font-weight: 800;
   text-shadow: 0 0 18px rgba(255, 86, 245, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .hero__subtitle {
@@ -273,6 +493,9 @@ html[lang="ko"] .fever__content h2 {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+.screen--play {
+  touch-action: none;
 }
 
 .top-actions {
@@ -902,9 +1125,10 @@ html[lang="ko"] .fever__content h2 {
   inset: 0;
   background: rgba(12, 4, 40, 0.94);
   display: grid;
-  place-items: center;
+  place-items: end center;
   text-align: center;
   overflow: hidden;
+  padding: 0 24px max(160px, env(safe-area-inset-bottom) + 24px);
 }
 
 .fever__glow {
@@ -917,18 +1141,23 @@ html[lang="ko"] .fever__content h2 {
 
 .fever__content {
   position: relative;
-  padding: 28px;
+  padding: 16px 28px 28px;
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   background: rgba(20, 9, 45, 0.95);
   width: min(90%, 340px);
   display: grid;
-  gap: 16px;
+  gap: 10px;
+}
+
+.fever__content h2 {
+  margin: -2px 0 0;
 }
 
 .fever__message {
-  margin: 0;
+  margin: -4px 0 0;
   color: var(--text-muted);
+  line-height: 1.3;
 }
 
 .fever__timer {
@@ -942,26 +1171,216 @@ html[lang="ko"] .fever__content h2 {
   text-shadow: 0 0 16px rgba(87, 242, 135, 0.45);
 }
 
+@keyframes feverTimeGlow {
+  0% {
+    filter: none;
+    text-shadow: 0 0 12px rgba(255, 96, 110, 0.18);
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(255, 85, 85, 0.5));
+    text-shadow: 0 0 28px rgba(255, 120, 130, 0.65);
+  }
+  100% {
+    filter: none;
+    text-shadow: 0 0 12px rgba(255, 96, 110, 0.18);
+  }
+}
+
+.fever__timer--glow #fever-time {
+  color: #ff8b9c;
+  animation: feverTimeGlow var(--fever-glow-speed, 0.5s) ease-in-out infinite;
+}
+
 .fever__timer small {
   font-size: 1rem;
   color: var(--text-muted);
 }
 
 .fever__swipe-zone {
-  border-radius: 18px;
-  border: 1px dashed rgba(255, 255, 255, 0.28);
-  padding: 18px;
-  background: rgba(255, 255, 255, 0.06);
-  display: grid;
-  gap: 6px;
+  --fever-swipe-size: min(180px, 52vw);
+  width: var(--fever-swipe-size);
+  height: var(--fever-swipe-size);
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   font-size: 0.95rem;
   color: var(--text-muted);
+  text-align: center;
+  margin: 0 auto;
+  justify-self: center;
+  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.fever__swipe-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.fever__swipe-zone p {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .fever__swipe-zone span {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--text-main);
   font-weight: 600;
+}
+
+.fever__swipe-penlight {
+  margin-top: -76px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex: 1 1 auto;
+  position: relative;
+}
+
+.fever__particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fever__particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 210, 0.95), rgba(255, 230, 130, 0));
+  box-shadow: 0 0 12px rgba(255, 221, 97, 0.75);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+
+.fever__particle--spark {
+  background: radial-gradient(circle, rgba(255, 245, 200, 0.95), rgba(255, 235, 150, 0));
+  box-shadow: 0 0 16px rgba(255, 226, 130, 0.9);
+}
+
+.fever__particle--star {
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle, rgba(255, 255, 210, 1), rgba(255, 200, 90, 0.1));
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  box-shadow: 0 0 18px rgba(255, 215, 120, 0.95);
+}
+
+.fever__particle {
+  animation: feverParticle var(--particle-duration, 0.6s) ease-out forwards;
+}
+
+.fever__swipe-lane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.fever__swipe-track {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.35);
+  margin: 0 10px;
+}
+
+.fever__swipe-arrow {
+  font-size: 1.4rem;
+  color: rgba(255, 255, 255, 0.65);
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.35);
+}
+
+.fever__swipe-arrow--left {
+  transform: translateY(-1px);
+}
+
+.fever__swipe-arrow--right {
+  transform: translateY(-1px);
+}
+
+.penlight--fever-mini {
+  --fever-penlight-translate: 0px;
+  --fever-penlight-rotate: 0deg;
+  --fever-penlight-scale: 0.35;
+  transform: translateX(var(--fever-penlight-translate))
+    rotate(var(--fever-penlight-rotate))
+    scale(var(--fever-penlight-scale));
+  transform-origin: center;
+  transition: transform 0.12s ease;
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 360px) {
+  .hero__title {
+    font-size: 2.1rem;
+    letter-spacing: 0.06em;
+  }
+
+  .fever__swipe-zone {
+    --fever-swipe-size: min(150px, 60vw);
+    padding: 12px;
+  }
+
+  .penlight--fever-mini {
+    --fever-penlight-scale: 0.33;
+  }
+
+  .fever__swipe-track {
+    height: 6px;
+    margin: 0 8px;
+  }
+
+  .fever__swipe-arrow {
+    font-size: 1.2rem;
+  }
+}
+
+@keyframes feverParticle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(var(--particle-scale, 0.6));
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--particle-tx, 0px)), calc(-50% + var(--particle-ty, -20px)))
+      scale(0.8);
+  }
 }
 
 .fever__stage {

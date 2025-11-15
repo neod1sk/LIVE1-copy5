@@ -161,12 +161,12 @@ const translations = {
     "play.resume": "再開する",
     "play.retry": "もう一度プレイ",
     "play.toTop": "トップに戻る",
-    "fever.title": "フィーバータイム！",
+    "fever.title": "アピールタイム！",
     "fever.message": "ペンライトをたくさん振って爆レスをもらおう！",
     "fever.swipe": "左右にスワイプ！",
     "fever.timerUnit": "秒",
     "fever.countUnit": "往復",
-    "fever.stage": "レス演出 Lv.{level}",
+    "fever.stage": "認知 Lv.{level}",
     "result.title": "ライブ結果",
     "result.scoreLabel": "トータルスコア",
     "result.levelLabel": "オタレベル",
@@ -179,12 +179,14 @@ const translations = {
     "history.pointsUnit": "点",
     "toast.glitch": "ボタンが故障！連打で復旧しよう…",
     "toast.match": "ナイス！ +{points} 点",
-    "toast.feverStart": "フィーバー突入！",
-    "toast.feverLevelUp": "レス演出レベルアップ！",
-    "toast.feverEnd": "フィーバー終了！",
+    "toast.feverStart": "アピールタイム突入！",
+    "toast.feverLevelUp": "認知レベルアップ！",
+    "toast.feverEnd": "アピールタイム終了！",
     "share.template":
       "オタクレベル「{levelName}」！トータルスコア{score}！\n{responses}回 推しにレスもらったよ😭💕 #推しライトLIVE #ライブアイドル",
     "penlight.off": "OFF",
+      "transition.resultTitle": "結果発表✨",
+      "transition.resultSubtitle": "あなたのオタクレベルは？？",
   },
   en: {
     "hero.title": "OshiLight LIVE!!",
@@ -216,12 +218,12 @@ const translations = {
     "play.resume": "Resume",
     "play.retry": "Play Again",
     "play.toTop": "Back to Top",
-    "fever.title": "Fever Time!",
-    "fever.message": "Swing the penlight like crazy to earn a mega response!",
+    "fever.title": "Appeal Time!",
+    "fever.message": "Swing your Light Stick like crazy and earn mega reactions!",
     "fever.swipe": "Swipe left and right!",
     "fever.timerUnit": "sec",
     "fever.countUnit": "swings",
-    "fever.stage": "Response Lv.{level}",
+    "fever.stage": "RECOGNITION Lv.{level}",
     "result.title": "Live Results",
     "result.scoreLabel": "Total Score",
     "result.levelLabel": "Ota Level",
@@ -234,12 +236,14 @@ const translations = {
     "history.pointsUnit": "pts",
     "toast.glitch": "Button malfunction! Tap rapidly to fix...",
     "toast.match": "Nice! +{points} pts",
-    "toast.feverStart": "Fever Time!",
-    "toast.feverLevelUp": "Response stage leveled up!",
-    "toast.feverEnd": "Fever ended!",
+    "toast.feverStart": "Appeal Time Start!",
+    "toast.feverLevelUp": "RECOGNITION LEVEL UP!",
+    "toast.feverEnd": "Appeal Time End!",
     "share.template":
       'Ota Level "{levelName}"! Total score {score}!\nGot {responses} responses from my idol 😭💕 #OshiLightLIVE #IdolLive',
     "penlight.off": "OFF",
+      "transition.resultTitle": "RESULT!!",
+      "transition.resultSubtitle": "What’s Your Ota Level??",
   },
   ko: {
     "hero.title": "오시 라이트 LIVE!!",
@@ -271,12 +275,12 @@ const translations = {
     "play.resume": "재개하기",
     "play.retry": "다시 플레이",
     "play.toTop": "처음으로 돌아가기",
-    "fever.title": "피버 타임!",
-    "fever.message": "펜라이트를 힘껏 흔들어서 폭렬 레스를 받아보자!",
+    "fever.title": "어필 타임!",
+    "fever.message": "응원봉을 힘껏 흔들어서 폭레스를 받아라!",
     "fever.swipe": "좌우로 스와이프!",
     "fever.timerUnit": "초",
     "fever.countUnit": "회",
-    "fever.stage": "레스 연출 Lv.{level}",
+    "fever.stage": "인지도 Lv.{level}",
     "result.title": "라이브 결과",
     "result.scoreLabel": "토탈 스코어",
     "result.levelLabel": "오타 레벨",
@@ -289,12 +293,14 @@ const translations = {
     "history.pointsUnit": "점",
     "toast.glitch": "버튼이 고장났어! 연타해서 복구하자…",
     "toast.match": "좋아! +{points}점",
-    "toast.feverStart": "피버 타임!",
-    "toast.feverLevelUp": "레스 연출 레벨 업!",
-    "toast.feverEnd": "피버 종료!",
+    "toast.feverStart": "어필타임 시작!",
+    "toast.feverLevelUp": "인지도 레벨업!",
+    "toast.feverEnd": "어필타임 끝!",
     "share.template":
       '오타쿠 레벨 "{levelName}"! 토탈 스코어 {score}!\n{responses}번 오시에게서 레스를 받았어 😭💕 #오시라이트LIVE #아이돌라이브',
     "penlight.off": "OFF",
+      "transition.resultTitle": "결과 발표✨",
+      "transition.resultSubtitle": "당신의 오타 레벨은??",
   },
 };
 
@@ -345,6 +351,86 @@ const hexToRgba = (hex, alpha = 1) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+const applyPenlightAppearance = (element, colorCode) => {
+  if (!element) return;
+  const tube = element.querySelector(".penlight__tube");
+  if (!tube) return;
+  if (!colorCode) {
+    element.classList.add("penlight--off");
+    element.style.setProperty("--tube-color", "#dbe1f2");
+    tube.style.backgroundColor = "";
+    tube.style.boxShadow =
+      "inset 0 0 18px rgba(255,255,255,0.65), 0 12px 22px rgba(0,0,0,0.22)";
+    return;
+  }
+  element.classList.remove("penlight--off");
+  element.style.setProperty("--tube-color", colorCode);
+  tube.style.backgroundColor = colorCode;
+  tube.style.boxShadow = `0 18px 40px rgba(0,0,0,0.35), 0 0 32px ${hexToRgba(
+    colorCode,
+    0.55
+  )}`;
+};
+
+const randomBetween = (min, max) => Math.random() * (max - min) + min;
+
+const setFeverPenlightMotion = (direction = null) => {
+  if (!feverPenlight) return;
+  if (!direction) {
+    feverPenlight.style.setProperty("--fever-penlight-translate", "0px");
+    feverPenlight.style.setProperty("--fever-penlight-rotate", "0deg");
+    if (feverParticles) {
+      feverParticles.querySelectorAll(".fever__particle").forEach((node) => {
+        if (!node.dataset.persist) {
+          node.remove();
+        }
+      });
+    }
+    return;
+  }
+  const translate = direction === "left" ? "-16px" : "16px";
+  const rotate = direction === "left" ? "-12deg" : "12deg";
+  feverPenlight.style.setProperty("--fever-penlight-translate", translate);
+  feverPenlight.style.setProperty("--fever-penlight-rotate", rotate);
+  spawnFeverParticles(direction);
+};
+
+const spawnFeverParticles = (direction) => {
+  if (!feverParticles) return;
+  const count = Math.floor(randomBetween(4, 6));
+  const baseAngle = direction === "left" ? Math.PI - Math.PI / 8 : Math.PI / 8;
+  const spread = Math.PI / 5;
+  for (let i = 0; i < count; i += 1) {
+    const particle = document.createElement("span");
+    const variantRand = Math.random();
+    let variantClass = "fever__particle";
+    if (variantRand < 0.25) {
+      variantClass += " fever__particle--star";
+    } else if (variantRand < 0.65) {
+      variantClass += " fever__particle--spark";
+    }
+    particle.className = variantClass;
+    const angle = baseAngle + randomBetween(-spread, spread);
+    const distance = randomBetween(32, 56);
+    const tx = Math.cos(angle) * distance;
+    const ty = -Math.abs(Math.sin(angle) * distance * 0.75) - randomBetween(6, 18);
+    const duration = randomBetween(0.5, 0.7);
+    const scale = randomBetween(0.5, 0.9);
+    particle.style.setProperty("--particle-tx", `${tx.toFixed(2)}px`);
+    particle.style.setProperty("--particle-ty", `${ty.toFixed(2)}px`);
+    particle.style.setProperty("--particle-duration", `${duration.toFixed(2)}s`);
+    particle.style.setProperty("--particle-scale", scale.toFixed(2));
+    feverParticles.appendChild(particle);
+    particle.addEventListener(
+      "animationend",
+      () => {
+        particle.remove();
+      },
+      { once: true }
+    );
+  }
+};
+
 const getLuminance = (hex) => {
   const { r, g, b } = hexToRgb(hex);
   const srgb = [r, g, b].map((value) => {
@@ -390,6 +476,7 @@ class GameStore {
         swingCount: 0,
         responseStage: 1,
       },
+      isTransitioning: false,
       hardGlitch: {
         cooling: false,
         pendingPresses: 0,
@@ -402,6 +489,7 @@ class GameStore {
     };
     this.state = deepClone(this.initialState);
     this.listeners = new Set();
+    this.transitionTimeout = null;
   }
 
   subscribe(listener) {
@@ -690,13 +778,27 @@ class GameStore {
 
   finish() {
     this.clearTimers();
+    if (this.transitionTimeout) {
+      clearTimeout(this.transitionTimeout);
+      this.transitionTimeout = null;
+    }
     this.update((state) => ({
       ...state,
       paused: false,
       timers: { ...state.timers, main: null, fever: null },
+      isTransitioning: true,
     }));
-    screens.showResult(this.state);
-    saveHistory(this.state);
+    screens.showTransition();
+    const transitionDuration = 1000;
+    const finalizeResult = () => {
+      this.update((state) => ({
+        ...state,
+        isTransitioning: false,
+      }));
+      screens.showResult(this.state);
+      saveHistory(this.state);
+    };
+    this.transitionTimeout = setTimeout(finalizeResult, transitionDuration);
   }
 }
 
@@ -708,6 +810,7 @@ const screens = {
   result: document.getElementById("screen-result"),
   langSwitcher: document.getElementById("lang-switcher"),
   hero: document.querySelector(".hero"),
+  transition: document.getElementById("transition-result"),
   lockScroll() {
     document.body.classList.add("scroll-lock");
   },
@@ -726,6 +829,7 @@ const screens = {
     if (this.hero) {
       this.hero.hidden = false;
     }
+    this.hideTransition();
   },
   showPlay() {
     resetViewportScroll(this.play);
@@ -739,6 +843,7 @@ const screens = {
     if (this.hero) {
       this.hero.hidden = true;
     }
+    this.hideTransition();
   },
   showResult(state) {
     setHeroInteractive(true);
@@ -752,7 +857,22 @@ const screens = {
     if (this.hero) {
       this.hero.hidden = false;
     }
+    this.hideTransition();
     populateResult(state);
+  },
+  showTransition() {
+    this.lockScroll();
+    this.top.hidden = true;
+    this.play.hidden = true;
+    this.result.hidden = true;
+    if (this.transition) {
+      this.transition.hidden = false;
+    }
+  },
+  hideTransition() {
+    if (this.transition) {
+      this.transition.hidden = true;
+    }
   },
 };
 
@@ -762,6 +882,9 @@ const hudTime = document.getElementById("hud-time");
 const hudTimerItem = document.getElementById("hud-timer-item");
 const targetColor = document.getElementById("target-color");
 const penlight = document.getElementById("penlight");
+const feverPenlight = document.getElementById("fever-penlight");
+const feverParticles = document.getElementById("fever-particles");
+const feverTimer = document.querySelector(".fever__timer");
 const penlightLabel = document.getElementById("penlight-label");
 const feverLayer = document.getElementById("fever");
 const feverTime = document.getElementById("fever-time");
@@ -807,6 +930,7 @@ function resetViewportScroll(target) {
 let lastSwingDirection = null;
 let previewItems = [];
 let lastCountdownTime = null;
+let lastFeverCountdownTime = null;
 let audioContext = null;
 
 const isResultScreenActive = () => screens && screens.result && !screens.result.hidden;
@@ -899,6 +1023,17 @@ function updateUI(state) {
   hudSuccess.textContent = state.successCount;
   hudTime.textContent = state.timeLeft;
   updatePauseButtonLabel(state.paused);
+  const isLowTime =
+    Number.isFinite(state.timeLeft) && state.timeLeft <= 3 && state.timeLeft >= 0;
+  if (hudTimerItem) {
+    hudTimerItem.classList.toggle("fever__timer--glow", isLowTime);
+    if (isLowTime) {
+      const glowSpeed = Math.max(0.4, Math.min(0.6, 0.4 + (state.timeLeft / 10) * 0.2));
+      hudTimerItem.style.setProperty("--fever-glow-speed", `${glowSpeed.toFixed(2)}s`);
+    } else {
+      hudTimerItem.style.removeProperty("--fever-glow-speed");
+    }
+  }
   const timeChanged = lastCountdownTime !== state.timeLeft;
   updateCountdownEffects(state.timeLeft);
   if (
@@ -913,8 +1048,11 @@ function updateUI(state) {
     lastCountdownTime = state.timeLeft;
   }
 
+  const isPenlightOff = state.currentIndex === null;
+  const currentColor = isPenlightOff ? null : colors[state.currentIndex];
+
   const tube = penlight.querySelector(".penlight__tube");
-  if (state.currentIndex === null) {
+  if (isPenlightOff) {
     penlight.classList.add("penlight--off");
     penlight.style.setProperty("--tube-color", "#dbe1f2");
     if (tube) {
@@ -932,7 +1070,6 @@ function updateUI(state) {
     }
   } else {
     penlight.classList.remove("penlight--off");
-    const currentColor = colors[state.currentIndex];
     penlight.style.setProperty("--tube-color", currentColor.code);
     if (tube) {
       tube.style.backgroundColor = currentColor.code;
@@ -956,6 +1093,11 @@ function updateUI(state) {
     }
   }
 
+  applyPenlightAppearance(feverPenlight, currentColor?.code || null);
+  if (!state.fever.active) {
+    setFeverPenlightMotion(null);
+  }
+
   targetColor.querySelector(".color-card__swatch").style.background =
     colors[state.targetIndex].code;
   targetColor.querySelector(".color-card__name").textContent =
@@ -970,6 +1112,36 @@ function updateUI(state) {
   feverStage.textContent = stageText;
   if (state.fever.active) {
     feverTime.textContent = state.fever.timeLeft;
+  }
+  const feverLowTime =
+    state.fever?.active && Number.isFinite(state.fever.timeLeft) && state.fever.timeLeft <= 3;
+  if (feverTimer) {
+    feverTimer.classList.toggle("fever__timer--glow", feverLowTime);
+    if (feverLowTime) {
+      const feverGlowSpeed = Math.max(
+        0.4,
+        Math.min(0.6, 0.4 + (state.fever.timeLeft / 10) * 0.2)
+      );
+      feverTimer.style.setProperty("--fever-glow-speed", `${feverGlowSpeed.toFixed(2)}s`);
+    } else {
+      feverTimer.style.removeProperty("--fever-glow-speed");
+    }
+  }
+  const feverTimeChanged = lastFeverCountdownTime !== (state.fever?.timeLeft ?? null);
+  if (state.fever?.active) {
+    if (
+      feverTimeChanged &&
+      Number.isFinite(state.fever.timeLeft) &&
+      state.fever.timeLeft <= 3 &&
+      state.fever.timeLeft >= 0
+    ) {
+      playFeverCountdownChime(state.fever.timeLeft);
+    }
+    if (feverTimeChanged) {
+      lastFeverCountdownTime = state.fever.timeLeft;
+    }
+  } else {
+    lastFeverCountdownTime = null;
   }
 }
 
@@ -1024,16 +1196,23 @@ function handleFeverSwing(e) {
       e.currentTarget.setPointerCapture(e.pointerId);
     }
     lastSwingDirection = null;
+    setFeverPenlightMotion(null);
   } else if (e.type === "pointermove") {
     const rect = e.currentTarget.getBoundingClientRect();
     const center = rect.left + rect.width / 2;
     const direction = e.clientX < center ? "left" : "right";
-    if (lastSwingDirection && lastSwingDirection !== direction) {
-      game.swing(direction);
+    if (lastSwingDirection !== direction) {
+      setFeverPenlightMotion(direction);
+      if (lastSwingDirection) {
+        game.swing(direction);
+      }
+    } else if (!lastSwingDirection) {
+      setFeverPenlightMotion(direction);
     }
     lastSwingDirection = direction;
   } else if (e.type === "pointerup" || e.type === "pointercancel") {
     lastSwingDirection = null;
+    setFeverPenlightMotion(null);
   }
 }
 
@@ -1153,7 +1332,16 @@ function showToast(message, variant = "success", options = {}) {
   const container =
     placement === "stage" && stageToastLayer ? stageToastLayer : document.body;
   const toast = document.createElement("div");
-  const extraClass = placement === "stage" ? " toast--stage" : "";
+  const extraClass =
+    placement === "stage"
+      ? ` toast--stage${
+          variant === "success"
+            ? message === t("toast.feverStart") || message === t("toast.feverEnd")
+              ? " toast--stage-success-pink"
+              : " toast--stage-success"
+            : ""
+        }`
+      : "";
   toast.className = `toast toast--${variant}${extraClass}`;
   toast.textContent = message;
   if (placement === "stage" && stageToastLayer) {
@@ -1210,6 +1398,52 @@ function playCountdownBeep(timeLeft) {
   oscillator.connect(gain).connect(ctx.destination);
   oscillator.start(now);
   oscillator.stop(now + duration + 0.05);
+}
+
+function playFeverCountdownChime(timeLeft) {
+  resumeAudioContext();
+  const ctx = getOrCreateAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime + 0.01;
+  const oscillator = ctx.createOscillator();
+  const delay = ctx.createDelay();
+  const feedback = ctx.createGain();
+  const gain = ctx.createGain();
+
+  const baseFreq = 840;
+  const interval = timeLeft === 1 ? 1.5 : 1.25;
+
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(baseFreq, now);
+  oscillator.detune.setValueAtTime(timeLeft === 1 ? 20 : 12, now);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.42, now + 0.02);
+  gain.gain.linearRampToValueAtTime(0.0001, now + 0.3);
+
+  delay.delayTime.value = 0.12;
+  feedback.gain.value = 0.45;
+
+  oscillator.connect(gain);
+  gain.connect(ctx.destination);
+  gain.connect(delay);
+  delay.connect(feedback);
+  feedback.connect(delay);
+  delay.connect(ctx.destination);
+
+  const harmonicOsc = ctx.createOscillator();
+  const harmonicGain = ctx.createGain();
+  harmonicOsc.type = "triangle";
+  harmonicOsc.frequency.setValueAtTime(baseFreq * interval, now);
+  harmonicGain.gain.setValueAtTime(0.0001, now);
+  harmonicGain.gain.exponentialRampToValueAtTime(0.2, now + 0.02);
+  harmonicGain.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+  harmonicOsc.connect(harmonicGain).connect(ctx.destination);
+
+  oscillator.start(now);
+  harmonicOsc.start(now);
+  oscillator.stop(now + 0.35);
+  harmonicOsc.stop(now + 0.3);
 }
 
 function bindTapSafeActivation(button, action) {
@@ -1366,10 +1600,95 @@ toastStyle.innerHTML = `
   opacity: 0;
   white-space: nowrap;
 }
+.toast--stage-success {
+  border: 1px solid rgba(87, 242, 135, 0.65);
+  color: #d4ffe5;
+  text-shadow: 0 0 8px rgba(87, 242, 135, 0.4);
+  box-shadow: 0 14px 28px rgba(20, 60, 40, 0.45), 0 0 20px rgba(87, 242, 135, 0.35);
+  background: linear-gradient(140deg, rgba(30, 80, 50, 0.4), rgba(20, 9, 45, 0.92));
+}
+
+.toast--stage-success-pink {
+  border: 1px solid rgba(255, 110, 210, 0.7);
+  color: #ffd8ff;
+  text-shadow: 0 0 8px rgba(255, 120, 220, 0.6);
+  box-shadow: 0 14px 28px rgba(120, 20, 90, 0.35), 0 0 20px rgba(255, 110, 210, 0.3);
+  background: linear-gradient(140deg, rgba(255, 120, 230, 0.18), rgba(40, 0, 70, 0.9));
+}
 .toast--stage.is-visible {
   transform: translateY(0);
   opacity: 1;
 }
 `;
 document.head.appendChild(toastStyle);
+
+document.addEventListener(
+  "gesturestart",
+  (event) => {
+    event.preventDefault();
+  },
+  { passive: false }
+);
+
+document.addEventListener(
+  "gesturechange",
+  (event) => {
+    event.preventDefault();
+  },
+  { passive: false }
+);
+
+document.addEventListener(
+  "gestureend",
+  (event) => {
+    event.preventDefault();
+  },
+  { passive: false }
+);
+
+function allowsDoubleTap() {
+  return false;
+}
+
+let lastTouchTime = 0;
+
+document.addEventListener(
+  "touchstart",
+  (event) => {
+    if (allowsDoubleTap(event.target)) return;
+    if (event.touches.length > 1) {
+      event.preventDefault();
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTouchTime <= 350) {
+      event.preventDefault();
+      return;
+    }
+    lastTouchTime = now;
+  },
+  { passive: false }
+);
+
+["touchmove", "touchend"].forEach((type) => {
+  document.addEventListener(
+    type,
+    (event) => {
+      if (allowsDoubleTap(event.target)) return;
+      if (event.touches && event.touches.length > 1) {
+        event.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+});
+
+document.addEventListener(
+  "dblclick",
+  (event) => {
+    if (allowsDoubleTap(event.target)) return;
+    event.preventDefault();
+  },
+  { passive: false }
+);
 

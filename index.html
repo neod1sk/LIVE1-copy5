@@ -3,7 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <title>推しライト LIVE!!</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"
+    />
     <meta
       name="description"
       content="推しライトLIVE!! - 地下アイドル現場のレスをもらう瞬間を再現するミニリズムゲーム"
@@ -202,8 +205,26 @@
               <small data-i18n="fever.timerUnit">sec</small>
             </div>
             <div class="fever__swipe-zone" id="fever-zone">
-              <p data-i18n="fever.swipe">左右にスワイプ！</p>
-              <span id="fever-count">0</span>
+              <div class="fever__swipe-text">
+                <p data-i18n="fever.swipe">左右にスワイプ！</p>
+                <span id="fever-count">0</span>
+              </div>
+              <div class="fever__swipe-penlight">
+                <div class="fever__swipe-lane" aria-hidden="true">
+                  <span class="fever__swipe-arrow fever__swipe-arrow--left">‹</span>
+                  <div class="fever__swipe-track"></div>
+                  <span class="fever__swipe-arrow fever__swipe-arrow--right">›</span>
+                </div>
+                <div class="fever__particles" id="fever-particles" aria-hidden="true"></div>
+                <div class="penlight penlight--fever-mini penlight--off" id="fever-penlight" aria-hidden="true">
+                  <div class="penlight__tube"></div>
+                  <div class="penlight__ring"></div>
+                  <div class="penlight__handle">
+                    <div class="penlight__emblem"></div>
+                    <div class="penlight__handle-cap"></div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="fever__stage" id="fever-stage">レス演出 Lv.1</div>
           </div>
@@ -258,6 +279,19 @@
           </ul>
         </section>
       </main>
+    </div>
+
+    <div class="transition-overlay transition-overlay--result" id="transition-result" hidden>
+      <div class="transition-overlay__content">
+        <div class="transition-overlay__burst"></div>
+        <div class="transition-overlay__sparkle"></div>
+        <h2 class="transition-overlay__title">
+          <span data-i18n="transition.resultTitle">RESULT!!</span>
+        </h2>
+        <p class="transition-overlay__subtitle">
+          <span data-i18n="transition.resultSubtitle">loading highlights...</span>
+        </p>
+      </div>
     </div>
 
     <script src="app.js"></script>

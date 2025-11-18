@@ -474,7 +474,7 @@ class GameStore {
         active: false,
         timeLeft: 10,
         swingCount: 0,
-        responseStage: 1,
+        responseStage: 0,
       },
       isTransitioning: false,
       hardGlitch: {
@@ -578,6 +578,7 @@ class GameStore {
 
   pause() {
     if (this.state.paused) return;
+    pauseCurrentBgm();
     this.clearTimers();
     this.update((state) => ({
       ...state,
@@ -596,6 +597,9 @@ class GameStore {
       this.startFeverTimer();
     } else if (this.state.timeLeft > 0) {
       this.startMainTimer();
+    }
+    if (bgmUnlocked) {
+      resumeCurrentBgm();
     }
   }
 
@@ -700,12 +704,13 @@ class GameStore {
         active: true,
         timeLeft: 10,
         swingCount: 0,
-        responseStage: 1,
+        responseStage: 0,
       },
     }));
     this.clearTimer("main");
     this.startFeverTimer();
     showToast(t("toast.feverStart"), "success");
+    playAppealTimeSfx();
   }
 
   startFeverTimer() {
@@ -733,16 +738,31 @@ class GameStore {
   swing(direction) {
     if (!this.state.fever.active || this.state.paused) return;
     this.update((state) => {
-      const swingCount = state.fever.swingCount + 1;
+      const swingCountRaw = state.fever.swingCount + 1;
+      const completedRoundTrip = swingCountRaw % 2 === 0;
+      const roundTripCount = Math.floor(swingCountRaw / 2);
+      if (completedRoundTrip) {
+        playLightstickSfx();
+      }
+      const previousRoundTrips = Math.floor(state.fever.swingCount / 2);
       let { responseStage } = state.fever;
       let score = state.score;
       let responses = state.responses;
 
-      if (swingCount % 10 === 0) {
+      if (completedRoundTrip && roundTripCount > 0 && roundTripCount % 10 === 0) {
         score += 10;
         responses += 1;
-        responseStage = Math.min(4, responseStage + 1);
+      }
+
+      if (
+        completedRoundTrip &&
+        roundTripCount > 0 &&
+        roundTripCount % 10 === 0 &&
+        previousRoundTrips % 10 !== 0
+      ) {
+        responseStage += 1;
         showToast(t("toast.feverLevelUp"), "success");
+        playLvupSfx(responseStage);
       }
 
       return {
@@ -751,8 +771,8 @@ class GameStore {
         responses,
         fever: {
           ...state.fever,
-          swingCount,
-          responseStage,
+          swingCount: swingCountRaw,
+          responseStage: responseStage,
         },
       };
     });
@@ -767,7 +787,7 @@ class GameStore {
         active: false,
         timeLeft: 10,
         swingCount: 0,
-        responseStage: 1,
+        responseStage: 0,
       },
       streak: 0,
       lastSuccessTimes: [],
@@ -796,6 +816,7 @@ class GameStore {
         isTransitioning: false,
       }));
       screens.showResult(this.state);
+      playHakushuSfx();
       saveHistory(this.state);
     };
     this.transitionTimeout = setTimeout(finalizeResult, transitionDuration);
@@ -830,6 +851,12 @@ const screens = {
       this.hero.hidden = false;
     }
     this.hideTransition();
+    if (bgmUnlocked) {
+      playMenuBgm(); // メニュー画面表示時のBGM（ユーザー操作後のみ）
+    }
+    if (bgmToggleButton) {
+      bgmToggleButton.hidden = false;
+    }
   },
   showPlay() {
     resetViewportScroll(this.play);
@@ -844,6 +871,12 @@ const screens = {
       this.hero.hidden = true;
     }
     this.hideTransition();
+    if (bgmUnlocked) {
+      playGameBgm(); // プレイ画面表示時のBGM（ユーザー操作後のみ）
+    }
+    if (bgmToggleButton) {
+      bgmToggleButton.hidden = false;
+    }
   },
   showResult(state) {
     setHeroInteractive(true);
@@ -859,6 +892,12 @@ const screens = {
     }
     this.hideTransition();
     populateResult(state);
+    if (bgmUnlocked) {
+      playMenuBgm(); // 結果画面表示時のBGM（メニューと同じ曲）
+    }
+    if (bgmToggleButton) {
+      bgmToggleButton.hidden = false;
+    }
   },
   showTransition() {
     this.lockScroll();
@@ -904,6 +943,14 @@ const hero = document.querySelector(".hero");
 const heroTitle = document.querySelector(".hero__title");
 const heroSubtitle = document.querySelector(".hero__subtitle");
 const heroInteractiveElements = [heroTitle, heroSubtitle];
+const appealImageArea = document.getElementById("appeal-image-area");
+const appealImage = document.getElementById("appeal-image");
+const appealImageSources = [
+  "./images/reactionaa.png",
+  "./images/reactionbb.png",
+  "./images/reactioncc.png",
+  "./images/reactiondd.png",
+];
 
 function resetViewportScroll(target) {
   if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
@@ -932,11 +979,289 @@ let previewItems = [];
 let lastCountdownTime = null;
 let lastFeverCountdownTime = null;
 let audioContext = null;
+let lastAppealLevel = null;
+
+// --- BGM 管理 ---
+const menuBgm = new Audio("./sounds/menu.mp3");
+menuBgm.loop = true;
+menuBgm.volume = 0.8;
+
+const playBgm = new Audio("./sounds/play.mp3");
+playBgm.loop = true;
+playBgm.volume = 0.8;
+
+const bgmTracks = [menuBgm, playBgm];
+const sfxClickTemplate = new Audio("./sounds/click.mp3");
+sfxClickTemplate.preload = "auto";
+sfxClickTemplate.volume = 0.55;
+const sfxStartTemplate = new Audio("./sounds/start.mp3");
+sfxStartTemplate.preload = "auto";
+sfxStartTemplate.volume = 0.7;
+const sfxArrowTemplate = new Audio("./sounds/arrow.mp3");
+sfxArrowTemplate.preload = "auto";
+sfxArrowTemplate.volume = 0.6;
+const sfxEndTemplate = new Audio("./sounds/end.mp3");
+sfxEndTemplate.preload = "auto";
+sfxEndTemplate.volume = 0.65;
+const sfxPauseTemplate = new Audio("./sounds/pause.mp3");
+sfxPauseTemplate.preload = "auto";
+sfxPauseTemplate.volume = 0.65;
+const sfxMainTemplate = new Audio("./sounds/main.mp3");
+sfxMainTemplate.preload = "auto";
+sfxMainTemplate.volume = 0.6;
+const sfxLightstickTemplate = new Audio("./sounds/lightstick.mp3");
+sfxLightstickTemplate.preload = "auto";
+sfxLightstickTemplate.volume = 0.6;
+const sfxArigatoTemplate = new Audio("./sounds/arigato.mp3");
+sfxArigatoTemplate.preload = "auto";
+sfxArigatoTemplate.volume = 0.6;
+const sfxHakushuTemplate = new Audio("./sounds/hakushu.mp3");
+sfxHakushuTemplate.preload = "auto";
+sfxHakushuTemplate.volume = 0.75;
+const sfxAppealTemplate = new Audio("./sounds/appealTime.mp3");
+sfxAppealTemplate.preload = "auto";
+sfxAppealTemplate.volume = 0.7;
+const sfxHakushuATemplate = new Audio("./sounds/hakushua.mp3");
+sfxHakushuATemplate.preload = "auto";
+sfxHakushuATemplate.volume = 0.7;
+const sfxHakushuBTemplate = new Audio("./sounds/hakushub.mp3");
+sfxHakushuBTemplate.preload = "auto";
+sfxHakushuBTemplate.volume = 0.7;
+const sfxYattaTemplate = new Audio("./sounds/yatta.mp3");
+sfxYattaTemplate.preload = "auto";
+sfxYattaTemplate.volume = 0.75;
+const levelUpSfxMap = [
+  { maxLevel: 3, audio: sfxHakushuBTemplate },
+  { maxLevel: Infinity, audio: sfxYattaTemplate },
+];
+const sfxTemplates = [
+  sfxClickTemplate,
+  sfxStartTemplate,
+  sfxArrowTemplate,
+  sfxEndTemplate,
+  sfxPauseTemplate,
+  sfxMainTemplate,
+  sfxLightstickTemplate,
+  sfxArigatoTemplate,
+  sfxHakushuTemplate,
+  sfxAppealTemplate,
+  sfxHakushuATemplate,
+  sfxHakushuBTemplate,
+  sfxYattaTemplate,
+];
+
+let bgmUnlocked = false;
+let currentBgm = null;
+const bgmToggleButton = document.getElementById("toggleBgmBtn");
+let isMuted = false;
+
+function stopAllBgm() {
+  currentBgm = null;
+  bgmTracks.forEach((track) => {
+    track.pause();
+    track.currentTime = 0;
+  });
+}
+
+function playMenuBgm(isAutoAttempt = false) {
+  stopAllBgm();
+  currentBgm = menuBgm;
+  menuBgm.currentTime = 0;
+  const playPromise = menuBgm.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    return playPromise.catch((error) => {
+      console.warn("Menu BGM auto-play blocked:", error);
+      currentBgm = null;
+      if (isAutoAttempt) {
+        bgmUnlocked = false;
+      }
+      return undefined;
+    });
+  }
+  return undefined;
+}
+
+function playGameBgm() {
+  stopAllBgm();
+  currentBgm = playBgm;
+  playBgm.currentTime = 0;
+  const playPromise = playBgm.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    return playPromise.catch((error) => {
+      console.warn("Play BGM auto-play blocked:", error);
+      currentBgm = null;
+      return undefined;
+    });
+  }
+  return undefined;
+}
+
+function pauseCurrentBgm() {
+  if (!currentBgm) return;
+  currentBgm.pause();
+}
+
+function resumeCurrentBgm() {
+  if (!currentBgm) return;
+  currentBgm.play().catch((error) => {
+    console.warn("Resuming BGM failed:", error);
+  });
+}
+
+function attemptAutoPlayMenuBgm() {
+  bgmUnlocked = true;
+  const autoPlayPromise = playMenuBgm(true);
+  if (autoPlayPromise && typeof autoPlayPromise.catch === "function") {
+    autoPlayPromise.catch(() => {});
+  }
+}
+
+function updateMuteStatus() {
+  bgmTracks.forEach((track) => {
+    track.muted = isMuted;
+  });
+  sfxTemplates.forEach((track) => {
+    track.muted = isMuted;
+  });
+  if (bgmToggleButton) {
+    bgmToggleButton.textContent = isMuted ? "🔇" : "🔊";
+  }
+}
+
+function playButtonSfx() {
+  if (isMuted) return;
+  const instance = sfxClickTemplate.cloneNode();
+  instance.volume = sfxClickTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Button SFX play blocked:", error);
+  });
+}
+
+function playStartSfx() {
+  if (isMuted) return;
+  const instance = sfxStartTemplate.cloneNode();
+  instance.volume = sfxStartTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Start SFX play blocked:", error);
+  });
+}
+
+function playArrowSfx() {
+  if (isMuted) return;
+  const instance = sfxArrowTemplate.cloneNode();
+  instance.volume = sfxArrowTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Arrow SFX play blocked:", error);
+  });
+}
+
+function playEndSfx() {
+  if (isMuted) return;
+  const instance = sfxEndTemplate.cloneNode();
+  instance.volume = sfxEndTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("End SFX play blocked:", error);
+  });
+}
+
+function playPauseSfx() {
+  if (isMuted) return;
+  const instance = sfxPauseTemplate.cloneNode();
+  instance.volume = sfxPauseTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Pause SFX play blocked:", error);
+  });
+}
+
+function playMainSfx() {
+  if (isMuted) return;
+  const instance = sfxMainTemplate.cloneNode();
+  instance.volume = sfxMainTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Main SFX play blocked:", error);
+  });
+}
+
+function playLightstickSfx() {
+  if (isMuted) return;
+  const instance = sfxLightstickTemplate.cloneNode();
+  instance.volume = sfxLightstickTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Lightstick SFX play blocked:", error);
+  });
+}
+
+function playArigatoSfx() {
+  if (isMuted) return;
+  const instance = sfxArigatoTemplate.cloneNode();
+  instance.volume = sfxArigatoTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Arigato SFX play blocked:", error);
+  });
+}
+
+function playHakushuSfx() {
+  if (isMuted) return;
+  resumeAudioContext();
+  const instance = sfxHakushuTemplate.cloneNode();
+  instance.volume = sfxHakushuTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("Hakushu SFX play blocked:", error);
+  });
+}
+
+function playAppealTimeSfx() {
+  if (isMuted) return;
+  resumeAudioContext();
+  const instance = sfxAppealTemplate.cloneNode();
+  instance.volume = sfxAppealTemplate.volume;
+  instance.muted = isMuted;
+  instance.play().catch((error) => {
+    console.warn("AppealTime SFX play blocked:", error);
+  });
+}
+
+function playLvupSfx(level) {
+  if (isMuted) return;
+  resumeAudioContext();
+  const entry = levelUpSfxMap.find((item) => level <= item.maxLevel);
+  if (!entry?.audio) return;
+  const template = entry.audio;
+  const instance = template.cloneNode(true);
+  instance.volume = template.volume;
+  instance.muted = isMuted;
+  instance.currentTime = 0;
+  const playPromise = instance.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch((error) => {
+      console.warn("Lvup SFX play blocked:", error);
+    });
+  }
+}
+
+if (bgmToggleButton) {
+  bgmToggleButton.addEventListener("click", () => {
+    isMuted = !isMuted;
+    updateMuteStatus();
+  });
+}
+
+updateMuteStatus();
 
 const isResultScreenActive = () => screens && screens.result && !screens.result.hidden;
 
 const handleHeroClick = () => {
   if (!isResultScreenActive()) return;
+  playButtonSfx();
   screens.showTop();
 };
 
@@ -944,6 +1269,7 @@ const handleHeroKeydown = (event) => {
   if (!isResultScreenActive()) return;
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
+    playButtonSfx();
     screens.showTop();
   }
 };
@@ -1102,14 +1428,66 @@ function updateUI(state) {
     colors[state.targetIndex].code;
   targetColor.querySelector(".color-card__name").textContent =
     colors[state.targetIndex].name;
+  targetColor.hidden = !!state.fever.active;
 
   easyGuide.hidden = state.mode !== "easy";
 
   feverLayer.hidden = !state.fever.active;
   const swingLabel = t("fever.countUnit");
-  const stageText = t("fever.stage", { level: state.fever.responseStage || 1 });
-  feverCount.textContent = `${state.fever.swingCount} ${swingLabel}`;
+  const swingRoundTrips = Math.floor((state.fever.swingCount || 0) / 2);
+  const stageLevel = Math.max(0, state.fever.responseStage ?? 0);
+  const stageText = t("fever.stage", { level: stageLevel });
+  feverCount.textContent = `${swingRoundTrips} ${swingLabel}`;
   feverStage.textContent = stageText;
+  if (appealImageArea && appealImage) {
+    if (state.fever.active && stageLevel >= 1) {
+      const imageIndex = Math.min(stageLevel - 1, appealImageSources.length - 1);
+      const nextSrc = appealImageSources[imageIndex];
+      if (appealImage.getAttribute("src") !== nextSrc) {
+        appealImage.setAttribute("src", nextSrc);
+      }
+      appealImage.alt = stageText;
+      appealImageArea.hidden = false;
+      appealImageArea.classList.add("is-visible");
+      const levelChanged = lastAppealLevel !== stageLevel;
+      if (levelChanged) {
+        appealImageArea.classList.remove("is-flash");
+        void appealImageArea.offsetWidth;
+        appealImageArea.classList.add("is-flash");
+        const stars = appealImageArea.querySelector(".appeal-stars");
+        if (stageLevel >= 4) {
+          appealImageArea.classList.add("is-epic");
+          if (stars) {
+            stars.classList.remove("is-bursting");
+            void stars.offsetWidth;
+            stars.classList.add("is-bursting");
+          }
+        } else {
+          appealImageArea.classList.remove("is-epic");
+          if (stars) {
+            stars.classList.remove("is-bursting");
+          }
+        }
+        setTimeout(() => {
+          appealImageArea.classList.remove("is-flash");
+        }, 700);
+        lastAppealLevel = stageLevel;
+      }
+    } else {
+      appealImageArea.hidden = true;
+      appealImageArea.classList.remove("is-visible");
+      appealImageArea.classList.remove("is-flash", "is-epic");
+      const stars = appealImageArea.querySelector(".appeal-stars");
+      if (stars) {
+        stars.classList.remove("is-bursting");
+        void stars.offsetWidth;
+        stars.classList.remove("is-bursting");
+      }
+      appealImage.removeAttribute("src");
+      appealImage.alt = "";
+      lastAppealLevel = null;
+    }
+  }
   if (state.fever.active) {
     feverTime.textContent = state.fever.timeLeft;
   }
@@ -1218,6 +1596,9 @@ function handleFeverSwing(e) {
 
 function showScreenPlay() {
   resumeAudioContext();
+  if (!bgmUnlocked) {
+    bgmUnlocked = true; // 初回のユーザー操作でBGM再生を解禁
+  }
   if (hudTimerItem) {
     hudTimerItem.classList.remove("is-countdown");
   }
@@ -1494,15 +1875,67 @@ function bindTapSafeActivation(button, action) {
 }
 
 function attachEventListeners() {
-  document.getElementById("btn-start").addEventListener("click", showScreenPlay);
-  document.getElementById("btn-end").addEventListener("click", endGame);
-  document.getElementById("btn-retry").addEventListener("click", showScreenPlay);
-  document.getElementById("btn-top").addEventListener("click", () => screens.showTop());
-  document.getElementById("btn-share").addEventListener("click", shareOnX);
-  bindTapSafeActivation(document.getElementById("btn-left"), () => game.rotate(-1));
-  bindTapSafeActivation(document.getElementById("btn-right"), () => game.rotate(1));
+  const btnStart = document.getElementById("btn-start");
+  if (btnStart) {
+    btnStart.addEventListener("click", () => {
+      playStartSfx();
+      showScreenPlay();
+    });
+  }
+  const btnEnd = document.getElementById("btn-end");
+  if (btnEnd) {
+    btnEnd.addEventListener("click", () => {
+      playEndSfx();
+      endGame();
+    });
+  }
+  const btnRetry = document.getElementById("btn-retry");
+  if (btnRetry) {
+    btnRetry.addEventListener("click", () => {
+      playStartSfx();
+      showScreenPlay();
+    });
+  }
+  const btnTop = document.getElementById("btn-top");
+  if (btnTop) {
+    btnTop.addEventListener("click", () => {
+      playMainSfx();
+      screens.showTop();
+    });
+  }
+  const btnShare = document.getElementById("btn-share");
+  if (btnShare) {
+    btnShare.addEventListener("click", () => {
+      playArigatoSfx();
+      shareOnX();
+    });
+  }
+  const btnRanking = document.getElementById("btn-ranking");
+  if (btnRanking) {
+    btnRanking.addEventListener("click", () => {
+      playMainSfx();
+      showToast(t("top.ranking"), "success");
+    });
+  }
+  const modeRadios = document.querySelectorAll('input[name="mode"]');
+  modeRadios.forEach((radio) => {
+    radio.addEventListener("change", () => {
+      playMainSfx();
+    });
+  });
+  bindTapSafeActivation(document.getElementById("btn-left"), () => {
+    playArrowSfx();
+    game.rotate(-1);
+  });
+  bindTapSafeActivation(document.getElementById("btn-right"), () => {
+    playArrowSfx();
+    game.rotate(1);
+  });
   if (pauseButton) {
-    bindTapSafeActivation(pauseButton, () => game.togglePause());
+    bindTapSafeActivation(pauseButton, () => {
+      playPauseSfx();
+      game.togglePause();
+    });
   }
 
   document.addEventListener("keydown", (e) => {
@@ -1522,21 +1955,33 @@ function attachEventListeners() {
   });
 
   const howtoModal = document.getElementById("howto-modal");
-  document.getElementById("btn-howto").addEventListener("click", () => {
-    howtoModal.hidden = false;
-  });
-  document.getElementById("btn-close-howto").addEventListener("click", () => {
-    howtoModal.hidden = true;
-  });
+  const btnHowto = document.getElementById("btn-howto");
+  if (btnHowto) {
+    btnHowto.addEventListener("click", () => {
+      playMainSfx();
+      howtoModal.hidden = false;
+    });
+  }
+  const btnCloseHowto = document.getElementById("btn-close-howto");
+  if (btnCloseHowto) {
+    btnCloseHowto.addEventListener("click", () => {
+      playMainSfx();
+      howtoModal.hidden = true;
+    });
+  }
   howtoModal.addEventListener("click", (e) => {
     if (e.target === howtoModal || e.target.classList.contains("howto-modal__backdrop")) {
+      playMainSfx();
       howtoModal.hidden = true;
     }
   });
 
   if (langButtons.length) {
     langButtons.forEach((btn) => {
-      btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+      btn.addEventListener("click", () => {
+        playMainSfx();
+        setLanguage(btn.dataset.lang);
+      });
     });
   }
 }
@@ -1554,6 +1999,9 @@ function init() {
   attachEventListeners();
   mountStore();
   screens.showTop();
+  if (!bgmUnlocked) {
+    attemptAutoPlayMenuBgm();
+  }
 }
 
 document.addEventListener("DOMContentLoaded", init);

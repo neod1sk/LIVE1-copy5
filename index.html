@@ -15,6 +15,14 @@
   </head>
 
   <body>
+    <button
+      id="toggleBgmBtn"
+      class="bgm-toggle"
+      type="button"
+      aria-label="BGMのミュート切り替え"
+    >
+      🔊
+    </button>
     <div class="app-shell">
       <header class="hero">
         <div class="lang-switcher" id="lang-switcher">
@@ -147,6 +155,12 @@
             <div class="color-card" id="target-color">
               <div class="color-card__swatch"></div>
               <p class="color-card__name">RED</p>
+            </div>
+            <div id="appeal-image-area" class="appeal-image-area" hidden>
+              <div class="appeal-glow" aria-hidden="true"></div>
+              <div class="appeal-sparkles" aria-hidden="true"></div>
+              <div class="appeal-stars" aria-hidden="true"></div>
+              <img id="appeal-image" class="appeal-image" src="" alt="" />
             </div>
           </div>
 

@@ -1,0 +1,61 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Poppins:wght@600;700;800&display=swap");
+
+:root {
+  --bg-gradient: linear-gradient(160deg, #040411, #150734 45%, #37045c);
+  --accent: #ff61d8;
+  --accent-strong: #ff239f;
+  --text-main: #f8f8ff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --card-bg: rgba(18, 16, 41, 0.85);
+  --border: rgba(255, 255, 255, 0.08);
+  --danger: #ff3b6b;
+  --success: #57f287;
+  --font-base: "Inter", "Poppins", "Helvetica Neue", "Segoe UI", sans-serif;
+  --font-heading: "Poppins", "Inter", "Helvetica Neue", "Segoe UI", sans-serif;
+  --font-base-ja: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  --font-base-ko: "Noto Sans KR", "Inter", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-heading-ja: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --font-heading-ko: "Noto Sans KR", "Inter", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-size: 16px;
+  font-family: var(--font-base);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text-main);
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent),
+    var(--bg-gradient);
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  font-family: var(--font-base);
+  touch-action: pan-x pan-y;
+}
+
+body.scroll-lock {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 55%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+
+

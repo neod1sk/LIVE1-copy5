@@ -383,65 +383,6 @@
   }
 }
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;900&family=Poppins:wght@600;700;800&display=swap");
-
-:root {
-  --bg-gradient: linear-gradient(160deg, #040411, #150734 45%, #37045c);
-  --accent: #ff61d8;
-  --accent-strong: #ff239f;
-  --text-main: #f8f8ff;
-  --text-muted: rgba(255, 255, 255, 0.7);
-  --card-bg: rgba(18, 16, 41, 0.85);
-  --border: rgba(255, 255, 255, 0.08);
-  --danger: #ff3b6b;
-  --success: #57f287;
-  --font-base: "Inter", "Poppins", "Helvetica Neue", "Segoe UI", sans-serif;
-  --font-heading: "Poppins", "Inter", "Helvetica Neue", "Segoe UI", sans-serif;
-  --font-base-ja: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
-  --font-base-ko: "Noto Sans KR", "Inter", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  --font-heading-ja: "Noto Sans JP", "Inter", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-  --font-heading-ko: "Noto Sans KR", "Inter", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  font-size: 16px;
-  font-family: var(--font-base);
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-[hidden] {
-  display: none !important;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  color: var(--text-main);
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent),
-    var(--bg-gradient);
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  font-family: var(--font-base);
-  touch-action: pan-x pan-y;
-}
-
-body.scroll-lock {
-  overflow: hidden;
-  overscroll-behavior: contain;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 55%);
-  opacity: 0.3;
-  pointer-events: none;
-}
-
 .hero__title,
 .section-title,
 .stage__target h2,
@@ -796,22 +737,62 @@ html[lang="ko"] .fever__content h2 {
 .howto-modal__content {
   position: relative;
   margin: 64px auto;
-  width: min(90%, 420px);
+  width: min(92%, 520px);
   background: rgba(15, 13, 32, 0.95);
   border-radius: 24px;
-  padding: 24px 28px;
+  padding: 28px 32px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 24px 45px rgba(0, 0, 0, 0.45);
   animation: pop 0.25s ease;
 }
 
-.howto-modal__content h2 {
-  margin-top: 0;
+.howto-modal__title {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-.howto-modal__content ol {
-  padding-left: 20px;
+.howto-modal__section + .howto-modal__section {
+  margin-top: 18px;
+}
+
+.howto-modal__section h3 {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+}
+
+.howto-modal__list {
+  margin: 0;
+  padding-left: 1.2rem;
   color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.howto-modal__list li + li {
+  margin-top: 6px;
+}
+
+.howto-modal__list--score {
+  list-style: none;
+  padding-left: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.howto-modal__list--score li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.howto-modal__list--score span:first-child {
+  font-weight: 600;
 }
 
 .howto-modal__image {

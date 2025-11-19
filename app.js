@@ -1,340 +1,46 @@
-const colors = [
-  { name: "RED", code: "#FF0000" },
-  { name: "BLUE", code: "#0047FF" },
-  { name: "WHITE", code: "#FFFFFF" },
-  { name: "ORANGE", code: "#FFA500" },
-  { name: "GREEN", code: "#00C853" },
-  { name: "PURPLE", code: "#8000FF" },
-  { name: "PINK", code: "#FF69B4" },
-  { name: "YELLOW", code: "#FFEA00" },
-  { name: "LIGHT GREEN", code: "#90EE90" },
-  { name: "LIGHT BLUE", code: "#87CEFA" },
-  { name: "LIGHT PINK", code: "#FFB6C1" },
-  { name: "VIOLET", code: "#EE82EE" },
-  { name: "LIME", code: "#32CD32" },
-  { name: "TURQUOISE", code: "#40E0D0" },
-  { name: "HOT PINK", code: "#FF1493" },
-];
+import { PENLIGHT_COLORS } from "./src/constants/colors.js";
+import { LEVEL_TABLE } from "./src/constants/levels.js";
+import { MODE_SCORE } from "./src/constants/modeScore.js";
+import { createI18n } from "./src/i18n/index.js";
+import { GameStore } from "./src/state/gameStore.js";
+import {
+  initAudio,
+  unlockBgm,
+  isBgmUnlocked,
+  playMenuBgm,
+  playGameBgm,
+  pauseCurrentBgm,
+  resumeCurrentBgm,
+  attemptAutoPlayMenuBgm,
+  playButtonSfx,
+  playStartSfx,
+  playArrowSfx,
+  playEndSfx,
+  playPauseSfx,
+  playMainSfx,
+  playLightstickSfx,
+  playArigatoSfx,
+  playHakushuSfx,
+  playAppealTimeSfx,
+  playLvupSfx,
+  playCountdownBeep,
+  playFeverCountdownChime,
+  resumeAudioContext,
+} from "./src/audio/audioManager.js";
+import {
+  flashTargetCard,
+  flashHudValues,
+  updateCountdownEffects,
+  updatePauseButtonLabel,
+} from "./src/ui/effects.js";
+import { bindTapSafeActivation } from "./src/input/touch.js";
 
-const levelTable = [
-  {
-    key: "lv1",
-    max: 100,
-    name: "初心オタク",
-    levelClass: "level-1",
-    names: { ja: "初心オタク", en: "Rookie Ota", ko: "초심 오타쿠" },
-  },
-  {
-    key: "lv2",
-    max: 130,
-    name: "にわかオタク",
-    levelClass: "level-1",
-    names: { ja: "にわかオタク", en: "Casual Ota", ko: "니와카 오타쿠" },
-  },
-  {
-    key: "lv3",
-    max: 160,
-    name: "ぽんこつオタク",
-    levelClass: "level-1",
-    names: { ja: "ぽんこつオタク", en: "Clumsy Ota", ko: "폰코츠 오타쿠" },
-  },
-  {
-    key: "lv4",
-    max: 190,
-    name: "修行中オタク",
-    levelClass: "level-1",
-    names: { ja: "修行中オタク", en: "Training Ota", ko: "수련 중 오타쿠" },
-  },
-  {
-    key: "lv5",
-    max: 220,
-    name: "最前オタク",
-    levelClass: "level-1",
-    names: { ja: "最前オタク", en: "Front-Row Ota", ko: "최전열 오타쿠" },
-  },
-  {
-    key: "lv6",
-    max: 250,
-    name: "安定オタク",
-    levelClass: "level-2",
-    names: { ja: "安定オタク", en: "Steady Ota", ko: "안정 오타쿠" },
-  },
-  {
-    key: "lv7",
-    max: 280,
-    name: "フロアの要オタク",
-    levelClass: "level-2",
-    names: { ja: "フロアの要オタク", en: "Floor Anchor Ota", ko: "플로어 핵심 오타쿠" },
-  },
-  {
-    key: "lv8",
-    max: 310,
-    name: "ベテランオタク",
-    levelClass: "level-2",
-    names: { ja: "ベテランオタク", en: "Veteran Ota", ko: "베테랑 오타쿠" },
-  },
-  {
-    key: "lv9",
-    max: 340,
-    name: "熟練オタク",
-    levelClass: "level-2",
-    names: { ja: "熟練オタク", en: "Skilled Ota", ko: "숙련 오타쿠" },
-  },
-  {
-    key: "lv10",
-    max: 370,
-    name: "尊いオタク",
-    levelClass: "level-2",
-    names: { ja: "尊いオタク", en: "Blessed Ota", ko: "토토이 오타쿠" },
-  },
-  {
-    key: "lv11",
-    max: 400,
-    name: "爆レスオタク",
-    levelClass: "level-2",
-    names: { ja: "爆レスオタク", en: "Burst Response Ota", ko: "폭발 레스 오타쿠" },
-  },
-  {
-    key: "lv12",
-    max: 430,
-    name: "伝説のオタク",
-    levelClass: "level-2",
-    names: { ja: "伝説のオタク", en: "Legendary Ota", ko: "전설의 오타쿠" },
-  },
-  {
-    key: "lv13",
-    max: 460,
-    name: "異次元オタク",
-    levelClass: "level-2",
-    names: { ja: "異次元オタク", en: "Otherworldly Ota", ko: "이차원 오타쿠" },
-  },
-  {
-    key: "lv14",
-    max: 499,
-    name: "神オタク",
-    levelClass: "level-2",
-    names: { ja: "神オタク", en: "Godly Ota", ko: "신 오타쿠" },
-  },
-  {
-    key: "lv15",
-    max: Infinity,
-    name: "天界オタク",
-    levelClass: "level-3",
-    names: { ja: "天界オタク", en: "Celestial Ota", ko: "천계 오타쿠" },
-  },
-];
+const colors = PENLIGHT_COLORS;
+const levelTable = LEVEL_TABLE;
+const modeScore = MODE_SCORE;
 
-const modeScore = {
-  easy: 6,
-  normal: 10,
-  hard: 13,
-};
-
-const translations = {
-  ja: {
-    "hero.title": "推しライト LIVE!!",
-    "hero.subtitle": "ペンライトを合わせて推しのレスをつかめ!🔥",
-    "top.start": "ゲームスタート",
-    "top.howto": "操作説明",
-    "top.ranking": "ランキングを見る（近日公開）",
-    "settings.title": "難易度・設定",
-    "mode.easy.title": "🔰EASY",
-    "mode.easy.desc": "+6点／色見本付き練習モード！",
-    "mode.normal.title": "⚡NORMAL",
-    "mode.normal.desc": "+10点／色順を覚えてガチ勝負！",
-    "mode.hard.title": "🔥HARD",
-    "mode.hard.desc": "+13点／ボタンの故障を乗り越え高得点を狙え！",
-    "howto.title": "操作ガイド",
-    "howto.step1": "スタート後、中央の「お題カラー」をチェック。",
-    "howto.step2": "左右のボタンで順番にペンライトを回して一致させます。",
-    "howto.step3": "2 秒以内に 3 回連続成功でフィーバー突入！",
-    "howto.step4": "フィーバー中はスワイプ（左右往復）でポイントとレス演出を稼ごう。",
-    "howto.imageNote": "操作説明画像は後日差し替え予定",
-    "hud.scoreLabel": "スコア",
-    "hud.successLabel": "成功回数",
-    "hud.timeLabel": "残り時間",
-    "target.title": "TARGET COLOR",
-    "controls.turnLeft": "逆回し",
-    "controls.turnRight": "順回し",
-    "play.showResult": "終了する",
-    "play.pause": "中断する",
-    "play.resume": "再開する",
-    "play.retry": "もう一度プレイ",
-    "play.toTop": "トップに戻る",
-    "fever.title": "アピールタイム！",
-    "fever.message": "ペンライトをたくさん振って爆レスをもらおう！",
-    "fever.swipe": "左右にスワイプ！",
-    "fever.timerUnit": "秒",
-    "fever.countUnit": "往復",
-    "fever.stage": "認知 Lv.{level}",
-    "result.title": "ライブ結果",
-    "result.scoreLabel": "トータルスコア",
-    "result.levelLabel": "オタレベル",
-    "result.successLabel": "成功回数",
-    "result.responsesLabel": "レス獲得数",
-    "share.button": "Xでシェア",
-    "share.note": "スクショを添えて、あなたの輝きを見せよう!✨",
-    "history.title": "最近のスコア",
-    "history.empty": "初プレイを記録しよう！",
-    "history.pointsUnit": "点",
-    "toast.glitch": "ボタンが故障！連打で復旧しよう…",
-    "toast.match": "ナイス！ +{points} 点",
-    "toast.feverStart": "アピールタイム突入！",
-    "toast.feverLevelUp": "認知レベルアップ！",
-    "toast.feverEnd": "アピールタイム終了！",
-    "share.template":
-      "オタクレベル「{levelName}」！トータルスコア{score}！\n{responses}回 推しにレスもらったよ😭💕 #推しライトLIVE #ライブアイドル",
-    "penlight.off": "OFF",
-      "transition.resultTitle": "結果発表✨",
-      "transition.resultSubtitle": "あなたのオタクレベルは？？",
-  },
-  en: {
-    "hero.title": "OshiLight LIVE!!",
-    "hero.subtitle": "Sync Your Light stick and Catch Your Oshi’s Reaction!🔥",
-    "top.start": "Start Game",
-    "top.howto": "How to Play",
-    "top.ranking": "View Ranking (Coming Soon)",
-    "settings.title": "Difficulty & Settings",
-    "mode.easy.title": "🔰EASY",
-    "mode.easy.desc": "+6 pts / Practice with color hints!",
-    "mode.normal.title": "⚡NORMAL",
-    "mode.normal.desc": "+10 pts / Remember the colors and challenge yourself!",
-    "mode.hard.title": "🔥HARD",
-    "mode.hard.desc": "+13 pts / Beat the glitches and hit the high score!",
-    "howto.title": "How to Play",
-    "howto.step1": "After starting, check the target color at the top.",
-    "howto.step2": "Spin the penlight left/right to match the target color.",
-    "howto.step3": "Match 3 times within 2 seconds to trigger Fever Time!",
-    "howto.step4": "During Fever, swipe left and right to pile up points and responses.",
-    "howto.imageNote": "A detailed how-to image will be added soon.",
-    "hud.scoreLabel": "Score",
-    "hud.successLabel": "Matches",
-    "hud.timeLabel": "Time Left",
-    "target.title": "TARGET COLOR",
-    "controls.turnLeft": "Spin Left",
-    "controls.turnRight": "Spin Right",
-    "play.showResult": "Exit",
-    "play.pause": "Pause",
-    "play.resume": "Resume",
-    "play.retry": "Play Again",
-    "play.toTop": "Back to Top",
-    "fever.title": "Appeal Time!",
-    "fever.message": "Swing your Light Stick like crazy and earn mega reactions!",
-    "fever.swipe": "Swipe left and right!",
-    "fever.timerUnit": "sec",
-    "fever.countUnit": "swings",
-    "fever.stage": "RECOGNITION Lv.{level}",
-    "result.title": "Live Results",
-    "result.scoreLabel": "Total Score",
-    "result.levelLabel": "Ota Level",
-    "result.successLabel": "Matches",
-    "result.responsesLabel": "Responses",
-    "share.button": "Share on X",
-    "share.note": "Add a screenshot to make it shine brighter!✨",
-    "history.title": "Recent Scores",
-    "history.empty": "Play once to record your first score!",
-    "history.pointsUnit": "pts",
-    "toast.glitch": "Button malfunction! Tap rapidly to fix...",
-    "toast.match": "Nice! +{points} pts",
-    "toast.feverStart": "Appeal Time Start!",
-    "toast.feverLevelUp": "RECOGNITION LEVEL UP!",
-    "toast.feverEnd": "Appeal Time End!",
-    "share.template":
-      'Ota Level "{levelName}"! Total score {score}!\nGot {responses} responses from my idol 😭💕 #OshiLightLIVE #IdolLive',
-    "penlight.off": "OFF",
-      "transition.resultTitle": "RESULT!!",
-      "transition.resultSubtitle": "What’s Your Ota Level??",
-  },
-  ko: {
-    "hero.title": "오시 라이트 LIVE!!",
-    "hero.subtitle": "응원봉을 맞추고 오시의 레스를 잡아라!🔥",
-    "top.start": "게임 시작",
-    "top.howto": "조작 안내",
-    "top.ranking": "랭킹 보기 (준비 중)",
-    "settings.title": "난이도 · 설정",
-    "mode.easy.title": "🔰EASY",
-    "mode.easy.desc": "+6점 / 색상 예시가 있는 연습 모드!",
-    "mode.normal.title": "⚡NORMAL",
-    "mode.normal.desc": "+10점 / 색 순서를 외우고 진짜 승부!",
-    "mode.hard.title": "🔥HARD",
-    "mode.hard.desc": "+13점 / 버튼 오류를 뚫고 최고 점수 도전!",
-    "howto.title": "플레이 방법",
-    "howto.step1": "시작 후 상단의 목표 색을 확인하세요.",
-    "howto.step2": "좌우 버튼으로 펜라이트를 돌려 색을 맞춥니다.",
-    "howto.step3": "2초 안에 3회 연속 성공 시 피버 타임 진입!",
-    "howto.step4": "피버 중에는 좌우 스와이프로 포인트와 레스를 모으세요.",
-    "howto.imageNote": "조작 설명 이미지는 추후 교체 예정",
-    "hud.scoreLabel": "스코어",
-    "hud.successLabel": "성공 횟수",
-    "hud.timeLabel": "남은 시간",
-    "target.title": "TARGET COLOR",
-    "controls.turnLeft": "왼쪽 회전",
-    "controls.turnRight": "오른쪽 회전",
-    "play.showResult": "종료하기",
-    "play.pause": "중단하기",
-    "play.resume": "재개하기",
-    "play.retry": "다시 플레이",
-    "play.toTop": "처음으로 돌아가기",
-    "fever.title": "어필 타임!",
-    "fever.message": "응원봉을 힘껏 흔들어서 폭레스를 받아라!",
-    "fever.swipe": "좌우로 스와이프!",
-    "fever.timerUnit": "초",
-    "fever.countUnit": "회",
-    "fever.stage": "인지도 Lv.{level}",
-    "result.title": "라이브 결과",
-    "result.scoreLabel": "토탈 스코어",
-    "result.levelLabel": "오타 레벨",
-    "result.successLabel": "성공 횟수",
-    "result.responsesLabel": "레스 획득수",
-    "share.button": "X에 공유",
-    "share.note": "스크린샷을 첨부하면 더 빛나요!✨",
-    "history.title": "최근 스코어",
-    "history.empty": "첫 플레이를 기록해보자!",
-    "history.pointsUnit": "점",
-    "toast.glitch": "버튼이 고장났어! 연타해서 복구하자…",
-    "toast.match": "좋아! +{points}점",
-    "toast.feverStart": "어필타임 시작!",
-    "toast.feverLevelUp": "인지도 레벨업!",
-    "toast.feverEnd": "어필타임 끝!",
-    "share.template":
-      '오타쿠 레벨 "{levelName}"! 토탈 스코어 {score}!\n{responses}번 오시에게서 레스를 받았어 😭💕 #오시라이트LIVE #아이돌라이브',
-    "penlight.off": "OFF",
-      "transition.resultTitle": "결과 발표✨",
-      "transition.resultSubtitle": "당신의 오타 레벨은??",
-  },
-};
-
-const supportedLanguages = Object.keys(translations);
+const { t, setLanguage, getLanguage, supportedLanguages } = createI18n();
 let langButtons = [];
-let currentLang = (() => {
-  try {
-    const stored = localStorage.getItem("oshiLang");
-    if (stored && supportedLanguages.includes(stored)) {
-      return stored;
-    }
-  } catch (error) {
-    console.warn("Language preference read failed:", error);
-  }
-  return "ja";
-})();
-
-const translateTemplate = (template, params = {}) =>
-  template.replace(/\{(\w+)\}/g, (_, key) =>
-    Object.prototype.hasOwnProperty.call(params, key) ? params[key] : `{${key}}`
-  );
-
-const t = (key, params = {}) => {
-  const langPack = translations[currentLang] || translations.ja;
-  const fallback = translations.ja || {};
-  let template = langPack[key];
-  if (template === undefined || template === null) {
-    template = fallback[key];
-  }
-  if (template === undefined || template === null) {
-    template = key;
-  }
-  return translateTemplate(template, params);
-};
 
 const hexToRgb = (hex) => {
   if (!hex) return { r: 0, g: 0, b: 0 };
@@ -446,391 +152,20 @@ const getLuminance = (hex) => {
   return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 };
 
-const deepClone = (value) => JSON.parse(JSON.stringify(value));
-
 const getLevelInfoByScore = (score) =>
   levelTable.find((entry) => score <= entry.max) || levelTable[levelTable.length - 1];
 
-const getLevelName = (levelInfo, lang = currentLang) => {
+const getLevelName = (levelInfo, lang = getLanguage()) => {
   if (!levelInfo) return "";
   if (levelInfo.names && levelInfo.names[lang]) return levelInfo.names[lang];
   if (levelInfo.names && levelInfo.names.ja) return levelInfo.names.ja;
   return levelInfo.name || "";
 };
 
-const getLevelNameByKey = (key, lang = currentLang) => {
+const getLevelNameByKey = (key, lang = getLanguage()) => {
   const info = levelTable.find((entry) => entry.key === key);
   return getLevelName(info, lang);
 };
-
-class GameStore {
-  constructor() {
-    this.initialState = {
-      mode: "easy",
-      timeLeft: 60,
-      score: 0,
-      successCount: 0,
-      streak: 0,
-      paused: false,
-      currentIndex: null,
-      targetIndex: 0,
-      responses: 0,
-      lastSuccessTimes: [],
-      fever: {
-        active: false,
-        timeLeft: 10,
-        swingCount: 0,
-        responseStage: 0,
-      },
-      isTransitioning: false,
-      hardGlitch: {
-        cooling: false,
-        pendingPresses: 0,
-        timerId: null,
-      },
-      timers: {
-        main: null,
-        fever: null,
-      },
-    };
-    this.state = deepClone(this.initialState);
-    this.listeners = new Set();
-    this.transitionTimeout = null;
-  }
-
-  subscribe(listener) {
-    this.listeners.add(listener);
-    listener(this.state);
-    return () => this.listeners.delete(listener);
-  }
-
-  set(partial) {
-    this.state = { ...this.state, ...partial };
-    this.emit();
-  }
-
-  update(mapper) {
-    this.state = mapper({ ...this.state });
-    this.emit();
-  }
-
-  emit() {
-    this.listeners.forEach((listener) => listener(this.state));
-  }
-
-  reset() {
-    this.clearTimers();
-    const existingTimer =
-      this.state && this.state.hardGlitch ? this.state.hardGlitch.timerId : undefined;
-    if (existingTimer) {
-      clearTimeout(existingTimer);
-    }
-    this.state = deepClone(this.initialState);
-    this.state.targetIndex = this.randomTargetIndex();
-    this.emit();
-  }
-
-  randomTargetIndex() {
-    return Math.floor(Math.random() * colors.length);
-  }
-
-  start(mode) {
-    this.reset();
-    this.update((state) => ({
-      ...state,
-      mode,
-      timeLeft: 60,
-      currentIndex: null,
-      targetIndex: this.randomTargetIndex(),
-      paused: false,
-    }));
-    this.startMainTimer();
-  }
-
-  startMainTimer() {
-    this.clearTimer("main");
-    const tick = () => {
-      this.update((state) => {
-        if (state.paused) return state;
-        if (state.fever.active) return state;
-        const nextTime = state.timeLeft - 1;
-        if (nextTime <= 0) {
-          this.finish();
-          return { ...state, timeLeft: 0 };
-        }
-        return { ...state, timeLeft: nextTime };
-      });
-    };
-    this.state.timers.main = setInterval(tick, 1000);
-  }
-
-  clearTimer(key) {
-    if (this.state.timers[key]) {
-      clearInterval(this.state.timers[key]);
-      this.state.timers[key] = null;
-    }
-  }
-
-  clearTimers() {
-    Object.keys(this.state.timers).forEach((key) => this.clearTimer(key));
-  }
-
-  togglePause() {
-    if (this.state.paused) {
-      this.resume();
-    } else {
-      this.pause();
-    }
-  }
-
-  pause() {
-    if (this.state.paused) return;
-    pauseCurrentBgm();
-    this.clearTimers();
-    this.update((state) => ({
-      ...state,
-      paused: true,
-      timers: { ...state.timers, main: null, fever: null },
-    }));
-  }
-
-  resume() {
-    if (!this.state.paused) return;
-    this.update((state) => ({
-      ...state,
-      paused: false,
-    }));
-    if (this.state.fever.active) {
-      this.startFeverTimer();
-    } else if (this.state.timeLeft > 0) {
-      this.startMainTimer();
-    }
-    if (bgmUnlocked) {
-      resumeCurrentBgm();
-    }
-  }
-
-  rotate(direction) {
-    let matched = false;
-    this.update((state) => {
-      if (state.paused) return state;
-      if (state.fever.active) return state;
-
-      let workingState = state;
-      if (state.mode === "hard" && workingState.currentIndex !== null) {
-        const handled = this.handleHardGlitch(state);
-        workingState = handled.state;
-        if (handled.skip) {
-          return workingState;
-        }
-      }
-
-      let nextIndex;
-      if (workingState.currentIndex === null) {
-        nextIndex = 0;
-      } else {
-        nextIndex =
-          (workingState.currentIndex + direction + colors.length) % colors.length;
-      }
-
-      matched = nextIndex === workingState.targetIndex;
-      return { ...workingState, currentIndex: nextIndex };
-    });
-
-    if (matched) {
-      this.handleMatch();
-    }
-  }
-
-  handleHardGlitch(state) {
-    const glitch = { ...state.hardGlitch };
-    let skip = false;
-
-    if (glitch.pendingPresses > 0) {
-      glitch.pendingPresses -= 1;
-      skip = true;
-    } else if (!glitch.cooling && Math.random() < 0.25) {
-      glitch.pendingPresses = Math.floor(Math.random() * 3) + 2;
-      glitch.cooling = true;
-      skip = true;
-      glitch.timerId = setTimeout(() => {
-        this.update((s) => ({
-          ...s,
-          hardGlitch: { ...s.hardGlitch, cooling: false, timerId: null },
-        }));
-      }, 2000);
-      showToast(t("toast.glitch"), "danger");
-    }
-
-    return {
-      state: { ...state, hardGlitch: glitch },
-      skip,
-    };
-  }
-
-  handleMatch() {
-    const { mode } = this.state;
-    const points = modeScore[mode] || 0;
-    const now = Date.now();
-
-    this.update((state) => {
-      const lastSuccessTimes = [...state.lastSuccessTimes, now].filter(
-        (t) => now - t <= 2000
-      );
-      const streak = state.streak + 1;
-      const newScore = state.score + points;
-      const successCount = state.successCount + 1;
-
-      return {
-        ...state,
-        score: newScore,
-        successCount,
-        streak,
-        lastSuccessTimes,
-        targetIndex: this.randomTargetIndex(),
-      };
-    });
-
-    flashHudValues();
-    flashTargetCard();
-
-    if (!this.state.fever.active) {
-      showToast(t("toast.match", { points }), "success", { placement: "stage" });
-    }
-
-    const { fever, lastSuccessTimes, streak } = this.state;
-    if (!fever.active && lastSuccessTimes.length >= 3 && streak >= 3) {
-      this.enterFever();
-    }
-  }
-
-  enterFever() {
-    this.update((state) => ({
-      ...state,
-      fever: {
-        active: true,
-        timeLeft: 10,
-        swingCount: 0,
-        responseStage: 0,
-      },
-    }));
-    this.clearTimer("main");
-    this.startFeverTimer();
-    showToast(t("toast.feverStart"), "success");
-    playAppealTimeSfx();
-  }
-
-  startFeverTimer() {
-    this.clearTimer("fever");
-    this.state.timers.fever = setInterval(() => {
-      this.update((state) => {
-        if (!state.fever.active) return state;
-        if (state.paused) return state;
-        const nextTime = state.fever.timeLeft - 1;
-        if (nextTime <= 0) {
-          this.exitFever();
-          return {
-            ...state,
-            fever: { ...state.fever, active: false, timeLeft: 0 },
-          };
-        }
-        return {
-          ...state,
-          fever: { ...state.fever, timeLeft: nextTime },
-        };
-      });
-    }, 1000);
-  }
-
-  swing(direction) {
-    if (!this.state.fever.active || this.state.paused) return;
-    this.update((state) => {
-      const swingCountRaw = state.fever.swingCount + 1;
-      const completedRoundTrip = swingCountRaw % 2 === 0;
-      const roundTripCount = Math.floor(swingCountRaw / 2);
-      if (completedRoundTrip) {
-        playLightstickSfx();
-      }
-      const previousRoundTrips = Math.floor(state.fever.swingCount / 2);
-      let { responseStage } = state.fever;
-      let score = state.score;
-      let responses = state.responses;
-
-      if (completedRoundTrip && roundTripCount > 0 && roundTripCount % 10 === 0) {
-        score += 10;
-        responses += 1;
-      }
-
-      if (
-        completedRoundTrip &&
-        roundTripCount > 0 &&
-        roundTripCount % 10 === 0 &&
-        previousRoundTrips % 10 !== 0
-      ) {
-        responseStage += 1;
-        showToast(t("toast.feverLevelUp"), "success");
-        playLvupSfx(responseStage);
-      }
-
-      return {
-        ...state,
-        score,
-        responses,
-        fever: {
-          ...state.fever,
-          swingCount: swingCountRaw,
-          responseStage: responseStage,
-        },
-      };
-    });
-  }
-
-  exitFever() {
-    this.clearTimer("fever");
-    this.update((state) => ({
-      ...state,
-      fever: {
-        ...state.fever,
-        active: false,
-        timeLeft: 10,
-        swingCount: 0,
-        responseStage: 0,
-      },
-      streak: 0,
-      lastSuccessTimes: [],
-    }));
-    this.startMainTimer();
-    showToast(t("toast.feverEnd"), "success");
-  }
-
-  finish() {
-    this.clearTimers();
-    if (this.transitionTimeout) {
-      clearTimeout(this.transitionTimeout);
-      this.transitionTimeout = null;
-    }
-    this.update((state) => ({
-      ...state,
-      paused: false,
-      timers: { ...state.timers, main: null, fever: null },
-      isTransitioning: true,
-    }));
-    screens.showTransition();
-    const transitionDuration = 1000;
-    const finalizeResult = () => {
-      this.update((state) => ({
-        ...state,
-        isTransitioning: false,
-      }));
-      screens.showResult(this.state);
-      playHakushuSfx();
-      saveHistory(this.state);
-    };
-    this.transitionTimeout = setTimeout(finalizeResult, transitionDuration);
-  }
-}
-
-const game = new GameStore();
 
 const screens = {
   top: document.getElementById("screen-top"),
@@ -858,7 +193,7 @@ const screens = {
       this.hero.hidden = false;
     }
     this.hideTransition();
-    if (bgmUnlocked) {
+    if (isBgmUnlocked()) {
       playMenuBgm(); // メニュー画面表示時のBGM（ユーザー操作後のみ）
     }
     if (bgmToggleButton) {
@@ -878,7 +213,7 @@ const screens = {
       this.hero.hidden = true;
     }
     this.hideTransition();
-    if (bgmUnlocked) {
+    if (isBgmUnlocked()) {
       playGameBgm(); // プレイ画面表示時のBGM（ユーザー操作後のみ）
     }
     if (bgmToggleButton) {
@@ -899,7 +234,7 @@ const screens = {
     }
     this.hideTransition();
     populateResult(state);
-    if (bgmUnlocked) {
+    if (isBgmUnlocked()) {
       playMenuBgm(); // 結果画面表示時のBGM（メニューと同じ曲）
     }
     if (bgmToggleButton) {
@@ -921,6 +256,56 @@ const screens = {
     }
   },
 };
+
+const game = new GameStore({
+  colors,
+  modeScore,
+  t,
+  effects: {
+    onPause: () => {
+      pauseCurrentBgm();
+    },
+    onResume: () => {
+      if (isBgmUnlocked()) {
+        resumeCurrentBgm();
+      }
+    },
+    onHudFlash: () => {
+      flashHudValues(hudFlashTargets);
+    },
+    onTargetFlash: () => {
+      flashTargetCard(targetColor);
+    },
+    onMatchToast: ({ message, variant, options }) => {
+      showToast(message, variant, options);
+    },
+    onGlitchToast: ({ message, variant }) => {
+      showToast(message, variant);
+    },
+    onFeverStart: ({ message }) => {
+      showToast(message, "success");
+      playAppealTimeSfx();
+    },
+    onFeverLevelUp: ({ message, level }) => {
+      showToast(message, "success");
+      playLvupSfx(level);
+    },
+    onFeverEnd: ({ message }) => {
+      showToast(message, "success");
+    },
+    onFeverSwing: () => {
+      playLightstickSfx();
+    },
+    onTransitionStart: () => {
+      screens.showTransition();
+    },
+    onTransitionComplete: (state) => {
+      screens.showResult(state);
+      playHakushuSfx();
+      saveHistory(state);
+    },
+  },
+});
 
 const hudScore = document.getElementById("hud-score");
 const hudSuccess = document.getElementById("hud-success");
@@ -985,240 +370,9 @@ let lastSwingDirection = null;
 let previewItems = [];
 let lastCountdownTime = null;
 let lastFeverCountdownTime = null;
-let audioContext = null;
 let lastAppealLevel = null;
 
-// --- BGM 管理 ---
-let menuBgm = null;
-let playBgm = null;
-const bgmTracks = [];
-const sfxBaseMap = {};
-const sfxBaseList = [];
-const sfxConfig = {
-  click: { src: "./sounds/click.mp3", volume: 0.55 },
-  start: { src: "./sounds/start.mp3", volume: 0.7 },
-  arrow: { src: "./sounds/arrow.mp3", volume: 0.6 },
-  end: { src: "./sounds/end.mp3", volume: 0.65 },
-  pause: { src: "./sounds/pause.mp3", volume: 0.65 },
-  main: { src: "./sounds/main.mp3", volume: 0.6 },
-  lightstick: { src: "./sounds/lightstick.mp3", volume: 0.6 },
-  arigato: { src: "./sounds/arigato.mp3", volume: 0.6 },
-  hakushu: { src: "./sounds/hakushu.mp3", volume: 0.75 },
-  appeal: { src: "./sounds/appealTime.mp3", volume: 0.7 },
-  hakushua: { src: "./sounds/hakushua.mp3", volume: 0.7 },
-  hakushub: { src: "./sounds/hakushub.mp3", volume: 0.7 },
-  yatta: { src: "./sounds/yatta.mp3", volume: 0.75 },
-};
-const levelUpSfxMap = [
-  { maxLevel: 3, key: "hakushub" },
-  { maxLevel: Infinity, key: "yatta" },
-];
-
-function createAudio(src, volume, loop = false) {
-  const audio = new Audio(src);
-  audio.loop = loop;
-  audio.volume = volume;
-  audio.preload = "auto";
-  return audio;
-}
-
-function registerBgmTrack(audio) {
-  if (bgmTracks.indexOf(audio) === -1) {
-    bgmTracks.push(audio);
-  }
-}
-
-function registerSfxBase(audio) {
-  if (sfxBaseList.indexOf(audio) === -1) {
-    sfxBaseList.push(audio);
-  }
-}
-
-function getMenuBgm() {
-  if (!menuBgm) {
-    menuBgm = createAudio("./sounds/menu.mp3", 0.8, true);
-    menuBgm.muted = isMuted;
-    registerBgmTrack(menuBgm);
-  }
-  return menuBgm;
-}
-
-function getPlayBgm() {
-  if (!playBgm) {
-    playBgm = createAudio("./sounds/play.mp3", 0.8, true);
-    playBgm.muted = isMuted;
-    registerBgmTrack(playBgm);
-  }
-  return playBgm;
-}
-
-function getSfxBase(name) {
-  if (!sfxConfig[name]) {
-    return null;
-  }
-  if (!sfxBaseMap[name]) {
-    const config = sfxConfig[name];
-    const base = createAudio(config.src, config.volume);
-    base.muted = isMuted;
-    registerSfxBase(base);
-    sfxBaseMap[name] = base;
-  }
-  return sfxBaseMap[name];
-}
-
-function playSfx(name, options = {}) {
-  if (isMuted) return;
-  if (options.resumeContext !== false) {
-    resumeAudioContext();
-  }
-  const base = getSfxBase(name);
-  if (!base) return;
-  const instance = base.cloneNode(true);
-  instance.volume = base.volume;
-  instance.muted = isMuted;
-  instance.currentTime = 0;
-  const playPromise = instance.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    playPromise.catch((error) => {
-      console.warn(`${name} SFX play blocked:`, error);
-    });
-  }
-}
-
-let bgmUnlocked = false;
-let currentBgm = null;
 const bgmToggleButton = document.getElementById("toggleBgmBtn");
-let isMuted = false;
-
-function stopAllBgm() {
-  currentBgm = null;
-  bgmTracks.forEach((track) => {
-    track.pause();
-    track.currentTime = 0;
-  });
-}
-
-function playMenuBgm(isAutoAttempt = false) {
-  const bgm = getMenuBgm();
-  stopAllBgm();
-  currentBgm = bgm;
-  bgm.currentTime = 0;
-  const playPromise = bgm.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    return playPromise.catch((error) => {
-      console.warn("Menu BGM auto-play blocked:", error);
-      currentBgm = null;
-      if (isAutoAttempt) {
-        bgmUnlocked = false;
-      }
-      return undefined;
-    });
-  }
-  return undefined;
-}
-
-function playGameBgm() {
-  const bgm = getPlayBgm();
-  stopAllBgm();
-  currentBgm = bgm;
-  bgm.currentTime = 0;
-  const playPromise = bgm.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    return playPromise.catch((error) => {
-      console.warn("Play BGM auto-play blocked:", error);
-      currentBgm = null;
-      return undefined;
-    });
-  }
-  return undefined;
-}
-
-function pauseCurrentBgm() {
-  if (!currentBgm) return;
-  currentBgm.pause();
-}
-
-function resumeCurrentBgm() {
-  if (!currentBgm) return;
-  currentBgm.play().catch((error) => {
-    console.warn("Resuming BGM failed:", error);
-  });
-}
-
-function attemptAutoPlayMenuBgm() {
-  bgmUnlocked = true;
-  const autoPlayPromise = playMenuBgm(true);
-  if (autoPlayPromise && typeof autoPlayPromise.catch === "function") {
-    autoPlayPromise.catch(() => {});
-  }
-}
-
-function updateMuteStatus() {
-  bgmTracks.forEach((track) => {
-    track.muted = isMuted;
-  });
-  sfxBaseList.forEach((track) => {
-    track.muted = isMuted;
-  });
-  if (bgmToggleButton) {
-    bgmToggleButton.textContent = isMuted ? "🔇" : "🔊";
-  }
-}
-
-function playButtonSfx() {
-  playSfx("click");
-}
-
-function playStartSfx() {
-  playSfx("start");
-}
-
-function playArrowSfx() {
-  playSfx("arrow");
-}
-
-function playEndSfx() {
-  playSfx("end");
-}
-
-function playPauseSfx() {
-  playSfx("pause");
-}
-
-function playMainSfx() {
-  playSfx("main");
-}
-
-function playLightstickSfx() {
-  playSfx("lightstick");
-}
-
-function playArigatoSfx() {
-  playSfx("arigato");
-}
-
-function playHakushuSfx() {
-  playSfx("hakushu");
-}
-
-function playAppealTimeSfx() {
-  playSfx("appeal");
-}
-
-function playLvupSfx(level) {
-  const entry = levelUpSfxMap.find((item) => level <= item.maxLevel);
-  if (!entry) return;
-  playSfx(entry.key);
-}
-
-if (bgmToggleButton) {
-  bgmToggleButton.addEventListener("click", () => {
-    isMuted = !isMuted;
-    updateMuteStatus();
-  });
-}
-
-updateMuteStatus();
 
 const isResultScreenActive = () => screens && screens.result && !screens.result.hidden;
 
@@ -1311,7 +465,7 @@ function updateUI(state) {
   hudScore.textContent = state.score.toString().padStart(4, "0");
   hudSuccess.textContent = state.successCount;
   hudTime.textContent = state.timeLeft;
-  updatePauseButtonLabel(state.paused);
+  updatePauseButtonLabel(pauseButton, state.paused, t);
   const isLowTime =
     Number.isFinite(state.timeLeft) && state.timeLeft <= 3 && state.timeLeft >= 0;
   if (hudTimerItem) {
@@ -1324,7 +478,7 @@ function updateUI(state) {
     }
   }
   const timeChanged = lastCountdownTime !== state.timeLeft;
-  updateCountdownEffects(state.timeLeft);
+  updateCountdownEffects(hudTimerItem, hudTime, state.timeLeft);
   if (
     timeChanged &&
     Number.isFinite(state.timeLeft) &&
@@ -1494,37 +648,6 @@ function updateUI(state) {
   }
 }
 
-function flashTargetCard() {
-  if (!targetColor) return;
-  targetColor.classList.remove("color-card--flash");
-  void targetColor.offsetWidth;
-  targetColor.classList.add("color-card--flash");
-}
-
-function flashHudValues() {
-  hudFlashTargets.forEach(({ element, className }) => {
-    if (!element) return;
-    element.classList.remove(className);
-    void element.offsetWidth;
-    element.classList.add(className);
-  });
-}
-
-function updateCountdownEffects(timeLeft) {
-  if (!hudTimerItem || !hudTime) return;
-  const isCountdown = Number.isFinite(timeLeft) && timeLeft <= 10 && timeLeft >= 0;
-  hudTimerItem.classList.toggle("is-countdown", isCountdown);
-  hudTime.classList.toggle("is-countdown", isCountdown);
-}
-
-function updatePauseButtonLabel(isPaused) {
-  if (!pauseButton) return;
-  const key = isPaused ? "play.resume" : "play.pause";
-  pauseButton.textContent = t(key);
-  pauseButton.setAttribute("aria-pressed", isPaused ? "true" : "false");
-  pauseButton.dataset.state = isPaused ? "resume" : "pause";
-}
-
 function populateResult(state) {
   resultScore.textContent = state.score;
   const levelInfo = getLevelInfoByScore(state.score);
@@ -1567,8 +690,8 @@ function handleFeverSwing(e) {
 
 function showScreenPlay() {
   resumeAudioContext();
-  if (!bgmUnlocked) {
-    bgmUnlocked = true; // 初回のユーザー操作でBGM再生を解禁
+  if (!isBgmUnlocked()) {
+    unlockBgm(); // 初回のユーザー操作でBGM再生を解禁
   }
   if (hudTimerItem) {
     hudTimerItem.classList.remove("is-countdown");
@@ -1623,8 +746,9 @@ function restoreHistory() {
 
 function updateLangButtons() {
   if (!langButtons || !langButtons.length) return;
+  const activeLang = getLanguage();
   langButtons.forEach((btn) => {
-    const isActive = btn.dataset.lang === currentLang;
+    const isActive = btn.dataset.lang === activeLang;
     btn.classList.toggle("lang-switcher__btn--active", isActive);
     btn.setAttribute("aria-pressed", isActive ? "true" : "false");
     const flag =
@@ -1658,15 +782,9 @@ function applyTranslations() {
   });
 }
 
-function setLanguage(lang) {
+function changeLanguage(lang) {
   const nextLang = supportedLanguages.includes(lang) ? lang : "ja";
-  currentLang = nextLang;
-  try {
-    localStorage.setItem("oshiLang", nextLang);
-  } catch (error) {
-    console.warn("Language preference write failed:", error);
-  }
-  document.documentElement.setAttribute("lang", nextLang);
+  setLanguage(nextLang);
   applyTranslations();
   updateLangButtons();
   restoreHistory();
@@ -1710,144 +828,6 @@ function showToast(message, variant = "success", options = {}) {
     toast.classList.remove("is-visible");
     toast.addEventListener("transitionend", () => toast.remove(), { once: true });
   }, duration);
-}
-
-function getOrCreateAudioContext() {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return null;
-  if (!audioContext) {
-    audioContext = new AudioCtx();
-  }
-  return audioContext;
-}
-
-function resumeAudioContext() {
-  const ctx = getOrCreateAudioContext();
-  if (!ctx) return;
-  if (ctx.state === "suspended") {
-    ctx.resume().catch((error) => {
-      console.warn("AudioContext resume failed:", error);
-    });
-  }
-}
-
-function getCountdownFrequency(timeLeft) {
-  if (timeLeft === 0) {
-    return 1046;
-  }
-  return 620 + (10 - timeLeft) * 32;
-}
-
-function playCountdownBeep(timeLeft) {
-  resumeAudioContext();
-  const ctx = getOrCreateAudioContext();
-  if (!ctx) return;
-  const now = ctx.currentTime + 0.01;
-  const oscillator = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const isFinal = timeLeft === 0;
-  const duration = isFinal ? 1 : 0.25;
-  oscillator.type = "triangle";
-  oscillator.frequency.setValueAtTime(getCountdownFrequency(timeLeft), now);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(isFinal ? 0.7 : 0.4, now + 0.05);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start(now);
-  oscillator.stop(now + duration + 0.05);
-}
-
-function playFeverCountdownChime(timeLeft) {
-  resumeAudioContext();
-  const ctx = getOrCreateAudioContext();
-  if (!ctx) return;
-  const now = ctx.currentTime + 0.01;
-  const oscillator = ctx.createOscillator();
-  const delay = ctx.createDelay();
-  const feedback = ctx.createGain();
-  const gain = ctx.createGain();
-
-  const baseFreq = 840;
-  const interval = timeLeft === 1 ? 1.5 : 1.25;
-
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(baseFreq, now);
-  oscillator.detune.setValueAtTime(timeLeft === 1 ? 20 : 12, now);
-
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.42, now + 0.02);
-  gain.gain.linearRampToValueAtTime(0.0001, now + 0.3);
-
-  delay.delayTime.value = 0.12;
-  feedback.gain.value = 0.45;
-
-  oscillator.connect(gain);
-  gain.connect(ctx.destination);
-  gain.connect(delay);
-  delay.connect(feedback);
-  feedback.connect(delay);
-  delay.connect(ctx.destination);
-
-  const harmonicOsc = ctx.createOscillator();
-  const harmonicGain = ctx.createGain();
-  harmonicOsc.type = "triangle";
-  harmonicOsc.frequency.setValueAtTime(baseFreq * interval, now);
-  harmonicGain.gain.setValueAtTime(0.0001, now);
-  harmonicGain.gain.exponentialRampToValueAtTime(0.2, now + 0.02);
-  harmonicGain.gain.linearRampToValueAtTime(0.0001, now + 0.25);
-  harmonicOsc.connect(harmonicGain).connect(ctx.destination);
-
-  oscillator.start(now);
-  harmonicOsc.start(now);
-  oscillator.stop(now + 0.35);
-  harmonicOsc.stop(now + 0.3);
-}
-
-function bindTapSafeActivation(button, action) {
-  if (!button || typeof action !== "function") return;
-  let skipNextClick = false;
-
-  const invoke = () => {
-    resumeAudioContext();
-    action();
-  };
-
-  if (window.PointerEvent) {
-    button.addEventListener(
-      "pointerdown",
-      (event) => {
-        if (event.pointerType === "touch" || event.pointerType === "pen") {
-          event.preventDefault();
-          skipNextClick = true;
-          invoke();
-        } else {
-          skipNextClick = false;
-        }
-      },
-      { passive: false }
-    );
-    button.addEventListener("pointercancel", () => {
-      skipNextClick = false;
-    });
-  } else {
-    button.addEventListener(
-      "touchstart",
-      (event) => {
-        event.preventDefault();
-        skipNextClick = true;
-        invoke();
-      },
-      { passive: false }
-    );
-  }
-
-  button.addEventListener("click", () => {
-    if (skipNextClick) {
-      skipNextClick = false;
-      return;
-    }
-    invoke();
-  });
 }
 
 function attachEventListeners() {
@@ -1899,19 +879,31 @@ function attachEventListeners() {
       playMainSfx();
     });
   });
-  bindTapSafeActivation(document.getElementById("btn-left"), () => {
+  bindTapSafeActivation(
+    document.getElementById("btn-left"),
+    () => {
     playArrowSfx();
     game.rotate(-1);
-  });
-  bindTapSafeActivation(document.getElementById("btn-right"), () => {
+    },
+    { resumeAudio: resumeAudioContext }
+  );
+  bindTapSafeActivation(
+    document.getElementById("btn-right"),
+    () => {
     playArrowSfx();
     game.rotate(1);
-  });
+    },
+    { resumeAudio: resumeAudioContext }
+  );
   if (pauseButton) {
-    bindTapSafeActivation(pauseButton, () => {
+    bindTapSafeActivation(
+      pauseButton,
+      () => {
       playPauseSfx();
       game.togglePause();
-    });
+      },
+      { resumeAudio: resumeAudioContext }
+    );
   }
 
   document.addEventListener("keydown", (e) => {
@@ -1956,7 +948,7 @@ function attachEventListeners() {
     langButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         playMainSfx();
-        setLanguage(btn.dataset.lang);
+        changeLanguage(btn.dataset.lang);
       });
     });
   }
@@ -1971,11 +963,12 @@ function mountStore() {
 function init() {
   initUI();
   langButtons = Array.from(document.querySelectorAll("[data-lang]"));
-  setLanguage(currentLang);
+  initAudio({ toggleButton: bgmToggleButton });
+  changeLanguage(getLanguage());
   attachEventListeners();
   mountStore();
   screens.showTop();
-  if (!bgmUnlocked) {
+  if (!isBgmUnlocked()) {
     attemptAutoPlayMenuBgm();
   }
 }

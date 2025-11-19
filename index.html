@@ -11,6 +11,7 @@
       name="description"
       content="推しライトLIVE!! - 地下アイドル現場のレスをもらう瞬間を再現するミニリズムゲーム"
     />
+    <link rel="stylesheet" href="styles/base.css" />
     <link rel="stylesheet" href="styles.css" />
   </head>
 
@@ -113,22 +114,51 @@
           <div class="howto-modal__backdrop"></div>
           <div class="howto-modal__content">
             <button class="modal-close" id="btn-close-howto">×</button>
-            <h2 data-i18n="howto.title">操作ガイド</h2>
-            <ol>
-              <li data-i18n="howto.step1">
-                スタート後、中央の「お題カラー」をチェック。
-              </li>
-              <li data-i18n="howto.step2">
-                左右のボタンで順番にペンライトを回して一致させます。
-              </li>
-              <li data-i18n="howto.step3">2 秒以内に 3 回連続成功でフィーバー突入！</li>
-              <li data-i18n="howto.step4">
-                フィーバー中はスワイプ（左右往復）でポイントとレス演出を稼ごう。
-              </li>
-            </ol>
-            <div class="howto-modal__image">
-              <span data-i18n="howto.imageNote">操作説明画像は後日差し替え予定</span>
-            </div>
+            <h2 class="howto-modal__title" data-i18n="howto.title">🎮 操作ガイド</h2>
+
+            <section class="howto-modal__section">
+              <h3 data-i18n="howto.section.basics.title">基本操作</h3>
+              <ul class="howto-modal__list">
+                <li data-i18n="howto.section.basics.item1">スタート後に TARGET COLOR を確認。</li>
+                <li data-i18n="howto.section.basics.item2">左右ボタンでペンライトの色を切り替え、TARGET COLOR と一致させると得点が入ります。</li>
+                <li data-i18n="howto.section.basics.item3">2秒以内に3回成功すると「アピールタイム」に突入します。</li>
+              </ul>
+            </section>
+
+            <section class="howto-modal__section">
+              <h3 data-i18n="howto.section.fever.title">アピールタイム</h3>
+              <ul class="howto-modal__list">
+                <li data-i18n="howto.section.fever.item1">左右スワイプでペンライトを振ると、ポイントが増加し、推しのレス演出も発生します。</li>
+                <li data-i18n="howto.section.fever.item2">アピールタイムは 10 秒間続き、その間メインタイマーは停止します。</li>
+                <li data-i18n="howto.section.fever.item3">終了後は自動で通常モードに戻ります。</li>
+              </ul>
+            </section>
+
+            <section class="howto-modal__section">
+              <h3 data-i18n="howto.section.scoring.title">通常モードの得点（1回成功ごと）</h3>
+              <ul class="howto-modal__list howto-modal__list--score">
+                <li>
+                  <span data-i18n="howto.section.scoring.easyLabel">EASY</span>
+                  <span data-i18n="howto.section.scoring.easyValue">+6pt</span>
+                </li>
+                <li>
+                  <span data-i18n="howto.section.scoring.normalLabel">NORMAL</span>
+                  <span data-i18n="howto.section.scoring.normalValue">+10pt</span>
+                </li>
+                <li>
+                  <span data-i18n="howto.section.scoring.hardLabel">HARD</span>
+                  <span data-i18n="howto.section.scoring.hardValue">+13pt</span>
+                </li>
+              </ul>
+            </section>
+
+            <section class="howto-modal__section">
+              <h3 data-i18n="howto.section.feverScoring.title">アピールタイム中の得点</h3>
+              <ul class="howto-modal__list">
+                <li data-i18n="howto.section.feverScoring.item1">左右スワイプ 10 回ごとに +10pt を獲得。</li>
+                <li data-i18n="howto.section.feverScoring.item2">同時にレス獲得数も増え、演出がさらに華やかになります。</li>
+              </ul>
+            </section>
           </div>
         </section>
       </main>
@@ -308,7 +338,7 @@
       </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>
 

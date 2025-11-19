@@ -326,7 +326,13 @@ const translateTemplate = (template, params = {}) =>
 const t = (key, params = {}) => {
   const langPack = translations[currentLang] || translations.ja;
   const fallback = translations.ja || {};
-  const template = langPack[key] ?? fallback[key] ?? key;
+  let template = langPack[key];
+  if (template === undefined || template === null) {
+    template = fallback[key];
+  }
+  if (template === undefined || template === null) {
+    template = key;
+  }
   return translateTemplate(template, params);
 };
 
@@ -514,7 +520,8 @@ class GameStore {
 
   reset() {
     this.clearTimers();
-    const existingTimer = this.state?.hardGlitch?.timerId;
+    const existingTimer =
+      this.state && this.state.hardGlitch ? this.state.hardGlitch.timerId : undefined;
     if (existingTimer) {
       clearTimeout(existingTimer);
     }
@@ -946,10 +953,10 @@ const heroInteractiveElements = [heroTitle, heroSubtitle];
 const appealImageArea = document.getElementById("appeal-image-area");
 const appealImage = document.getElementById("appeal-image");
 const appealImageSources = [
-  "./images/reactionaa.png",
-  "./images/reactionbb.png",
-  "./images/reactioncc.png",
-  "./images/reactiondd.png",
+  "./images/reactionaa.jpg",
+  "./images/reactionbb.jpg",
+  "./images/reactioncc.jpg",
+  "./images/reactiondd.jpg",
 ];
 
 function resetViewportScroll(target) {
@@ -982,73 +989,101 @@ let audioContext = null;
 let lastAppealLevel = null;
 
 // --- BGM 管理 ---
-const menuBgm = new Audio("./sounds/menu.mp3");
-menuBgm.loop = true;
-menuBgm.volume = 0.8;
-
-const playBgm = new Audio("./sounds/play.mp3");
-playBgm.loop = true;
-playBgm.volume = 0.8;
-
-const bgmTracks = [menuBgm, playBgm];
-const sfxClickTemplate = new Audio("./sounds/click.mp3");
-sfxClickTemplate.preload = "auto";
-sfxClickTemplate.volume = 0.55;
-const sfxStartTemplate = new Audio("./sounds/start.mp3");
-sfxStartTemplate.preload = "auto";
-sfxStartTemplate.volume = 0.7;
-const sfxArrowTemplate = new Audio("./sounds/arrow.mp3");
-sfxArrowTemplate.preload = "auto";
-sfxArrowTemplate.volume = 0.6;
-const sfxEndTemplate = new Audio("./sounds/end.mp3");
-sfxEndTemplate.preload = "auto";
-sfxEndTemplate.volume = 0.65;
-const sfxPauseTemplate = new Audio("./sounds/pause.mp3");
-sfxPauseTemplate.preload = "auto";
-sfxPauseTemplate.volume = 0.65;
-const sfxMainTemplate = new Audio("./sounds/main.mp3");
-sfxMainTemplate.preload = "auto";
-sfxMainTemplate.volume = 0.6;
-const sfxLightstickTemplate = new Audio("./sounds/lightstick.mp3");
-sfxLightstickTemplate.preload = "auto";
-sfxLightstickTemplate.volume = 0.6;
-const sfxArigatoTemplate = new Audio("./sounds/arigato.mp3");
-sfxArigatoTemplate.preload = "auto";
-sfxArigatoTemplate.volume = 0.6;
-const sfxHakushuTemplate = new Audio("./sounds/hakushu.mp3");
-sfxHakushuTemplate.preload = "auto";
-sfxHakushuTemplate.volume = 0.75;
-const sfxAppealTemplate = new Audio("./sounds/appealTime.mp3");
-sfxAppealTemplate.preload = "auto";
-sfxAppealTemplate.volume = 0.7;
-const sfxHakushuATemplate = new Audio("./sounds/hakushua.mp3");
-sfxHakushuATemplate.preload = "auto";
-sfxHakushuATemplate.volume = 0.7;
-const sfxHakushuBTemplate = new Audio("./sounds/hakushub.mp3");
-sfxHakushuBTemplate.preload = "auto";
-sfxHakushuBTemplate.volume = 0.7;
-const sfxYattaTemplate = new Audio("./sounds/yatta.mp3");
-sfxYattaTemplate.preload = "auto";
-sfxYattaTemplate.volume = 0.75;
+let menuBgm = null;
+let playBgm = null;
+const bgmTracks = [];
+const sfxBaseMap = {};
+const sfxBaseList = [];
+const sfxConfig = {
+  click: { src: "./sounds/click.mp3", volume: 0.55 },
+  start: { src: "./sounds/start.mp3", volume: 0.7 },
+  arrow: { src: "./sounds/arrow.mp3", volume: 0.6 },
+  end: { src: "./sounds/end.mp3", volume: 0.65 },
+  pause: { src: "./sounds/pause.mp3", volume: 0.65 },
+  main: { src: "./sounds/main.mp3", volume: 0.6 },
+  lightstick: { src: "./sounds/lightstick.mp3", volume: 0.6 },
+  arigato: { src: "./sounds/arigato.mp3", volume: 0.6 },
+  hakushu: { src: "./sounds/hakushu.mp3", volume: 0.75 },
+  appeal: { src: "./sounds/appealTime.mp3", volume: 0.7 },
+  hakushua: { src: "./sounds/hakushua.mp3", volume: 0.7 },
+  hakushub: { src: "./sounds/hakushub.mp3", volume: 0.7 },
+  yatta: { src: "./sounds/yatta.mp3", volume: 0.75 },
+};
 const levelUpSfxMap = [
-  { maxLevel: 3, audio: sfxHakushuBTemplate },
-  { maxLevel: Infinity, audio: sfxYattaTemplate },
+  { maxLevel: 3, key: "hakushub" },
+  { maxLevel: Infinity, key: "yatta" },
 ];
-const sfxTemplates = [
-  sfxClickTemplate,
-  sfxStartTemplate,
-  sfxArrowTemplate,
-  sfxEndTemplate,
-  sfxPauseTemplate,
-  sfxMainTemplate,
-  sfxLightstickTemplate,
-  sfxArigatoTemplate,
-  sfxHakushuTemplate,
-  sfxAppealTemplate,
-  sfxHakushuATemplate,
-  sfxHakushuBTemplate,
-  sfxYattaTemplate,
-];
+
+function createAudio(src, volume, loop = false) {
+  const audio = new Audio(src);
+  audio.loop = loop;
+  audio.volume = volume;
+  audio.preload = "auto";
+  return audio;
+}
+
+function registerBgmTrack(audio) {
+  if (bgmTracks.indexOf(audio) === -1) {
+    bgmTracks.push(audio);
+  }
+}
+
+function registerSfxBase(audio) {
+  if (sfxBaseList.indexOf(audio) === -1) {
+    sfxBaseList.push(audio);
+  }
+}
+
+function getMenuBgm() {
+  if (!menuBgm) {
+    menuBgm = createAudio("./sounds/menu.mp3", 0.8, true);
+    menuBgm.muted = isMuted;
+    registerBgmTrack(menuBgm);
+  }
+  return menuBgm;
+}
+
+function getPlayBgm() {
+  if (!playBgm) {
+    playBgm = createAudio("./sounds/play.mp3", 0.8, true);
+    playBgm.muted = isMuted;
+    registerBgmTrack(playBgm);
+  }
+  return playBgm;
+}
+
+function getSfxBase(name) {
+  if (!sfxConfig[name]) {
+    return null;
+  }
+  if (!sfxBaseMap[name]) {
+    const config = sfxConfig[name];
+    const base = createAudio(config.src, config.volume);
+    base.muted = isMuted;
+    registerSfxBase(base);
+    sfxBaseMap[name] = base;
+  }
+  return sfxBaseMap[name];
+}
+
+function playSfx(name, options = {}) {
+  if (isMuted) return;
+  if (options.resumeContext !== false) {
+    resumeAudioContext();
+  }
+  const base = getSfxBase(name);
+  if (!base) return;
+  const instance = base.cloneNode(true);
+  instance.volume = base.volume;
+  instance.muted = isMuted;
+  instance.currentTime = 0;
+  const playPromise = instance.play();
+  if (playPromise && typeof playPromise.catch === "function") {
+    playPromise.catch((error) => {
+      console.warn(`${name} SFX play blocked:`, error);
+    });
+  }
+}
 
 let bgmUnlocked = false;
 let currentBgm = null;
@@ -1064,10 +1099,11 @@ function stopAllBgm() {
 }
 
 function playMenuBgm(isAutoAttempt = false) {
+  const bgm = getMenuBgm();
   stopAllBgm();
-  currentBgm = menuBgm;
-  menuBgm.currentTime = 0;
-  const playPromise = menuBgm.play();
+  currentBgm = bgm;
+  bgm.currentTime = 0;
+  const playPromise = bgm.play();
   if (playPromise && typeof playPromise.catch === "function") {
     return playPromise.catch((error) => {
       console.warn("Menu BGM auto-play blocked:", error);
@@ -1082,10 +1118,11 @@ function playMenuBgm(isAutoAttempt = false) {
 }
 
 function playGameBgm() {
+  const bgm = getPlayBgm();
   stopAllBgm();
-  currentBgm = playBgm;
-  playBgm.currentTime = 0;
-  const playPromise = playBgm.play();
+  currentBgm = bgm;
+  bgm.currentTime = 0;
+  const playPromise = bgm.play();
   if (playPromise && typeof playPromise.catch === "function") {
     return playPromise.catch((error) => {
       console.warn("Play BGM auto-play blocked:", error);
@@ -1120,7 +1157,7 @@ function updateMuteStatus() {
   bgmTracks.forEach((track) => {
     track.muted = isMuted;
   });
-  sfxTemplates.forEach((track) => {
+  sfxBaseList.forEach((track) => {
     track.muted = isMuted;
   });
   if (bgmToggleButton) {
@@ -1129,123 +1166,49 @@ function updateMuteStatus() {
 }
 
 function playButtonSfx() {
-  if (isMuted) return;
-  const instance = sfxClickTemplate.cloneNode();
-  instance.volume = sfxClickTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Button SFX play blocked:", error);
-  });
+  playSfx("click");
 }
 
 function playStartSfx() {
-  if (isMuted) return;
-  const instance = sfxStartTemplate.cloneNode();
-  instance.volume = sfxStartTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Start SFX play blocked:", error);
-  });
+  playSfx("start");
 }
 
 function playArrowSfx() {
-  if (isMuted) return;
-  const instance = sfxArrowTemplate.cloneNode();
-  instance.volume = sfxArrowTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Arrow SFX play blocked:", error);
-  });
+  playSfx("arrow");
 }
 
 function playEndSfx() {
-  if (isMuted) return;
-  const instance = sfxEndTemplate.cloneNode();
-  instance.volume = sfxEndTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("End SFX play blocked:", error);
-  });
+  playSfx("end");
 }
 
 function playPauseSfx() {
-  if (isMuted) return;
-  const instance = sfxPauseTemplate.cloneNode();
-  instance.volume = sfxPauseTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Pause SFX play blocked:", error);
-  });
+  playSfx("pause");
 }
 
 function playMainSfx() {
-  if (isMuted) return;
-  const instance = sfxMainTemplate.cloneNode();
-  instance.volume = sfxMainTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Main SFX play blocked:", error);
-  });
+  playSfx("main");
 }
 
 function playLightstickSfx() {
-  if (isMuted) return;
-  const instance = sfxLightstickTemplate.cloneNode();
-  instance.volume = sfxLightstickTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Lightstick SFX play blocked:", error);
-  });
+  playSfx("lightstick");
 }
 
 function playArigatoSfx() {
-  if (isMuted) return;
-  const instance = sfxArigatoTemplate.cloneNode();
-  instance.volume = sfxArigatoTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Arigato SFX play blocked:", error);
-  });
+  playSfx("arigato");
 }
 
 function playHakushuSfx() {
-  if (isMuted) return;
-  resumeAudioContext();
-  const instance = sfxHakushuTemplate.cloneNode();
-  instance.volume = sfxHakushuTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("Hakushu SFX play blocked:", error);
-  });
+  playSfx("hakushu");
 }
 
 function playAppealTimeSfx() {
-  if (isMuted) return;
-  resumeAudioContext();
-  const instance = sfxAppealTemplate.cloneNode();
-  instance.volume = sfxAppealTemplate.volume;
-  instance.muted = isMuted;
-  instance.play().catch((error) => {
-    console.warn("AppealTime SFX play blocked:", error);
-  });
+  playSfx("appeal");
 }
 
 function playLvupSfx(level) {
-  if (isMuted) return;
-  resumeAudioContext();
   const entry = levelUpSfxMap.find((item) => level <= item.maxLevel);
-  if (!entry?.audio) return;
-  const template = entry.audio;
-  const instance = template.cloneNode(true);
-  instance.volume = template.volume;
-  instance.muted = isMuted;
-  instance.currentTime = 0;
-  const playPromise = instance.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    playPromise.catch((error) => {
-      console.warn("Lvup SFX play blocked:", error);
-    });
-  }
+  if (!entry) return;
+  playSfx(entry.key);
 }
 
 if (bgmToggleButton) {
@@ -1419,7 +1382,8 @@ function updateUI(state) {
     }
   }
 
-  applyPenlightAppearance(feverPenlight, currentColor?.code || null);
+  const feverColorCode = currentColor ? currentColor.code : null;
+  applyPenlightAppearance(feverPenlight, feverColorCode);
   if (!state.fever.active) {
     setFeverPenlightMotion(null);
   }
@@ -1432,10 +1396,13 @@ function updateUI(state) {
 
   easyGuide.hidden = state.mode !== "easy";
 
-  feverLayer.hidden = !state.fever.active;
+  const feverState = state.fever;
+  feverLayer.hidden = !(feverState && feverState.active);
   const swingLabel = t("fever.countUnit");
-  const swingRoundTrips = Math.floor((state.fever.swingCount || 0) / 2);
-  const stageLevel = Math.max(0, state.fever.responseStage ?? 0);
+  const swingRoundTrips = Math.floor(((feverState && feverState.swingCount) || 0) / 2);
+  const rawStageLevel =
+    feverState && feverState.responseStage != null ? feverState.responseStage : 0;
+  const stageLevel = Math.max(0, rawStageLevel);
   const stageText = t("fever.stage", { level: stageLevel });
   feverCount.textContent = `${swingRoundTrips} ${swingLabel}`;
   feverStage.textContent = stageText;
@@ -1488,35 +1455,39 @@ function updateUI(state) {
       lastAppealLevel = null;
     }
   }
-  if (state.fever.active) {
-    feverTime.textContent = state.fever.timeLeft;
+  if (feverState && feverState.active) {
+    feverTime.textContent = feverState.timeLeft;
   }
   const feverLowTime =
-    state.fever?.active && Number.isFinite(state.fever.timeLeft) && state.fever.timeLeft <= 3;
+    feverState &&
+    feverState.active &&
+    Number.isFinite(feverState.timeLeft) &&
+    feverState.timeLeft <= 3;
   if (feverTimer) {
     feverTimer.classList.toggle("fever__timer--glow", feverLowTime);
     if (feverLowTime) {
       const feverGlowSpeed = Math.max(
         0.4,
-        Math.min(0.6, 0.4 + (state.fever.timeLeft / 10) * 0.2)
+        Math.min(0.6, 0.4 + (feverState.timeLeft / 10) * 0.2)
       );
       feverTimer.style.setProperty("--fever-glow-speed", `${feverGlowSpeed.toFixed(2)}s`);
     } else {
       feverTimer.style.removeProperty("--fever-glow-speed");
     }
   }
-  const feverTimeChanged = lastFeverCountdownTime !== (state.fever?.timeLeft ?? null);
-  if (state.fever?.active) {
+  const currentFeverTime = feverState && feverState.timeLeft != null ? feverState.timeLeft : null;
+  const feverTimeChanged = lastFeverCountdownTime !== currentFeverTime;
+  if (feverState && feverState.active) {
     if (
       feverTimeChanged &&
-      Number.isFinite(state.fever.timeLeft) &&
-      state.fever.timeLeft <= 3 &&
-      state.fever.timeLeft >= 0
+      Number.isFinite(feverState.timeLeft) &&
+      feverState.timeLeft <= 3 &&
+      feverState.timeLeft >= 0
     ) {
-      playFeverCountdownChime(state.fever.timeLeft);
+      playFeverCountdownChime(feverState.timeLeft);
     }
     if (feverTimeChanged) {
-      lastFeverCountdownTime = state.fever.timeLeft;
+      lastFeverCountdownTime = feverState.timeLeft;
     }
   } else {
     lastFeverCountdownTime = null;
@@ -1560,7 +1531,7 @@ function populateResult(state) {
   const levelName = getLevelName(levelInfo);
   resultLevel.textContent = levelName;
   resultCard.classList.remove("level-1", "level-2", "level-3");
-  if (levelInfo?.levelClass) {
+  if (levelInfo && levelInfo.levelClass) {
     resultCard.classList.add(levelInfo.levelClass);
   }
   resultSuccess.textContent = state.successCount;
@@ -1622,7 +1593,7 @@ function saveHistory(state) {
     score: state.score,
     success: state.successCount,
     responses: state.responses,
-    levelKey: levelInfo?.key ?? null,
+    levelKey: levelInfo && levelInfo.key != null ? levelInfo.key : null,
     date: new Date().toLocaleString(),
   };
   const history = JSON.parse(localStorage.getItem("oshiHistory") || "[]");
@@ -1672,7 +1643,12 @@ function applyTranslations() {
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     const key = node.dataset.i18n;
     if (!key) return;
-    if (key === "penlight.off" && game?.state?.currentIndex !== null) {
+    if (
+      key === "penlight.off" &&
+      game &&
+      game.state &&
+      game.state.currentIndex !== null
+    ) {
       return;
     }
     const translation = t(key);
@@ -1694,7 +1670,7 @@ function setLanguage(lang) {
   applyTranslations();
   updateLangButtons();
   restoreHistory();
-  if (game?.state) {
+  if (game && game.state) {
     updateUI(game.state);
   }
 }

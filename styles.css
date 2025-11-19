@@ -431,7 +431,6 @@ body {
 body.scroll-lock {
   overflow: hidden;
   overscroll-behavior: contain;
-  height: 100vh;
 }
 
 body::after {
@@ -479,7 +478,6 @@ html[lang="ko"] .fever__content h2 {
   width: min(420px, 100vw);
   min-height: 100vh;
   background: rgba(5, 5, 12, 0.65);
-  backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 28px;
   overflow: hidden;
@@ -489,6 +487,10 @@ html[lang="ko"] .fever__content h2 {
   user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
+}
+
+.app-shell {
+  backdrop-filter: blur(14px);
 }
 
 .app-shell * {
@@ -501,8 +503,7 @@ html[lang="ko"] .fever__content h2 {
   position: relative;
   padding: 60px 32px 32px;
   text-align: center;
-  background: linear-gradient(140deg, rgba(255, 20, 247, 0.4), rgba(2, 111, 255, 0.4));
-  background-image: url("./images/haikeia.png");
+  background-image: url("./images/haikeia.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -668,7 +669,7 @@ html[lang="ko"] .fever__content h2 {
   gap: 24px;
 }
 .screen--play {
-  touch-action: none;
+  touch-action: manipulation;
 }
 
 .top-actions {
@@ -1881,6 +1882,27 @@ body,
   font-size: 1.5rem;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  body::after {
+    display: none;
+  }
+
+  .app-shell {
+    background: rgba(10, 8, 24, 0.9);
+    backdrop-filter: none;
+  }
+
+  .hero__overlay {
+    display: none;
+  }
+
+  .screen--play {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 .bgm-toggle:hover,

@@ -33,7 +33,7 @@ export class GameStore {
 
     this.initialState = {
       mode: "easy",
-      timeLeft: 60,
+      timeLeft: 40,
       score: 0,
       successCount: 0,
       streak: 0,
@@ -105,7 +105,7 @@ export class GameStore {
     this.update((state) => ({
       ...state,
       mode,
-      timeLeft: 60,
+      timeLeft: 40,
       currentIndex: null,
       targetIndex: this.randomTargetIndex(),
       paused: false,

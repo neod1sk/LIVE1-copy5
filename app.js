@@ -27,12 +27,7 @@ import {
   playFeverCountdownChime,
   resumeAudioContext,
 } from "./src/audio/audioManager.js";
-import {
-  flashTargetCard,
-  flashHudValues,
-  updateCountdownEffects,
-  updatePauseButtonLabel,
-} from "./src/ui/effects.js";
+import { flashTargetCard, flashHudValues } from "./src/ui/effects.js";
 import { bindTapSafeActivation } from "./src/input/touch.js";
 
 const colors = PENLIGHT_COLORS;
@@ -372,6 +367,92 @@ let lastCountdownTime = null;
 let lastFeverCountdownTime = null;
 let lastAppealLevel = null;
 
+const renderCache = {
+  score: undefined,
+  success: undefined,
+  timeLeft: undefined,
+  countdownActive: undefined,
+  lowTimeActive: undefined,
+  pausedLabel: undefined,
+  pauseAria: undefined,
+  pauseDataState: undefined,
+  currentIndex: undefined,
+  penlightColor: undefined,
+  targetIndex: undefined,
+  targetColorCode: undefined,
+  targetName: undefined,
+  targetHidden: undefined,
+  mode: undefined,
+  feverActive: undefined,
+  feverTimeLeft: undefined,
+  feverLowTimeActive: undefined,
+  swingRoundTrips: undefined,
+  responseStage: undefined,
+  appealVisible: undefined,
+};
+
+let pendingRenderState = null;
+let pendingRenderForce = false;
+let renderFrameHandle = null;
+
+const rotationQueue = [];
+let rotationFrameHandle = null;
+const MAX_ROTATIONS_PER_FRAME = 24;
+
+const processRotationQueue = () => {
+  rotationFrameHandle = null;
+  if (!rotationQueue.length) return;
+  const rotationsThisFrame = rotationQueue.splice(0, MAX_ROTATIONS_PER_FRAME);
+  rotationsThisFrame.forEach((direction) => {
+    game.rotate(direction);
+  });
+  if (rotationQueue.length) {
+    rotationFrameHandle = requestAnimationFrame(processRotationQueue);
+  }
+};
+
+const queueRotation = (direction) => {
+  if (direction === 0) return;
+  if (rotationQueue.length < 120) {
+    rotationQueue.push(direction);
+  }
+  if (!rotationFrameHandle) {
+    rotationFrameHandle = requestAnimationFrame(processRotationQueue);
+  }
+};
+
+const resetRotationQueue = () => {
+  rotationQueue.splice(0, rotationQueue.length);
+  if (rotationFrameHandle) {
+    cancelAnimationFrame(rotationFrameHandle);
+    rotationFrameHandle = null;
+  }
+};
+
+const resetRenderCache = () => {
+  Object.keys(renderCache).forEach((key) => {
+    renderCache[key] = undefined;
+  });
+  lastCountdownTime = null;
+  lastFeverCountdownTime = null;
+  lastAppealLevel = null;
+};
+
+const enqueueRender = (state, { force = false } = {}) => {
+  pendingRenderState = state;
+  pendingRenderForce = pendingRenderForce || force;
+  if (!renderFrameHandle) {
+    renderFrameHandle = requestAnimationFrame(() => {
+      renderFrameHandle = null;
+      if (pendingRenderState) {
+        updateUI(pendingRenderState, { force: pendingRenderForce });
+      }
+      pendingRenderState = null;
+      pendingRenderForce = false;
+    });
+  }
+};
+
 const bgmToggleButton = document.getElementById("toggleBgmBtn");
 
 const isResultScreenActive = () => screens && screens.result && !screens.result.hidden;
@@ -461,127 +542,268 @@ function initUI() {
   restoreHistory();
 }
 
-function updateUI(state) {
-  hudScore.textContent = state.score.toString().padStart(4, "0");
-  hudSuccess.textContent = state.successCount;
-  hudTime.textContent = state.timeLeft;
-  updatePauseButtonLabel(pauseButton, state.paused, t);
-  const isLowTime =
-    Number.isFinite(state.timeLeft) && state.timeLeft <= 3 && state.timeLeft >= 0;
-  if (hudTimerItem) {
+function updateUI(state, { force = false } = {}) {
+  if (!state) return;
+  if (force) {
+    resetRenderCache();
+  }
+
+  const { score, successCount, timeLeft, currentIndex, targetIndex, mode, fever } = state;
+
+  if (renderCache.score !== score && hudScore) {
+    hudScore.textContent = score.toString().padStart(4, "0");
+    renderCache.score = score;
+  }
+
+  if (renderCache.success !== successCount && hudSuccess) {
+    hudSuccess.textContent = successCount;
+    renderCache.success = successCount;
+  }
+
+  const timeChanged = renderCache.timeLeft !== timeLeft;
+  if (timeChanged && hudTime) {
+    hudTime.textContent = timeLeft;
+    if (
+      Number.isFinite(timeLeft) &&
+      timeLeft <= 10 &&
+      timeLeft >= 0 &&
+      lastCountdownTime !== timeLeft
+    ) {
+      playCountdownBeep(timeLeft);
+    }
+    lastCountdownTime = timeLeft;
+    renderCache.timeLeft = timeLeft;
+  }
+
+  const isCountdown = Number.isFinite(timeLeft) && timeLeft <= 10 && timeLeft >= 0;
+  if (renderCache.countdownActive !== isCountdown) {
+    if (hudTimerItem) {
+      hudTimerItem.classList.toggle("is-countdown", isCountdown);
+    }
+    if (hudTime) {
+      hudTime.classList.toggle("is-countdown", isCountdown);
+    }
+    renderCache.countdownActive = isCountdown;
+  }
+
+  const isLowTime = Number.isFinite(timeLeft) && timeLeft <= 3 && timeLeft >= 0;
+  if (renderCache.lowTimeActive !== isLowTime && hudTimerItem) {
     hudTimerItem.classList.toggle("fever__timer--glow", isLowTime);
-    if (isLowTime) {
-      const glowSpeed = Math.max(0.4, Math.min(0.6, 0.4 + (state.timeLeft / 10) * 0.2));
-      hudTimerItem.style.setProperty("--fever-glow-speed", `${glowSpeed.toFixed(2)}s`);
-    } else {
+    if (!isLowTime) {
       hudTimerItem.style.removeProperty("--fever-glow-speed");
     }
+    renderCache.lowTimeActive = isLowTime;
   }
-  const timeChanged = lastCountdownTime !== state.timeLeft;
-  updateCountdownEffects(hudTimerItem, hudTime, state.timeLeft);
+  if (isLowTime && timeChanged && hudTimerItem) {
+    const glowSpeed = Math.max(0.4, Math.min(0.6, 0.4 + (timeLeft / 10) * 0.2));
+    hudTimerItem.style.setProperty("--fever-glow-speed", `${glowSpeed.toFixed(2)}s`);
+  }
+
+  if (pauseButton) {
+    const pauseText = t(state.paused ? "play.resume" : "play.pause");
+    if (renderCache.pausedLabel !== pauseText) {
+      pauseButton.textContent = pauseText;
+      renderCache.pausedLabel = pauseText;
+    }
+    const pauseAria = state.paused ? "true" : "false";
+    if (renderCache.pauseAria !== pauseAria) {
+      pauseButton.setAttribute("aria-pressed", pauseAria);
+      renderCache.pauseAria = pauseAria;
+    }
+    const pauseState = state.paused ? "resume" : "pause";
+    if (renderCache.pauseDataState !== pauseState) {
+      pauseButton.dataset.state = pauseState;
+      renderCache.pauseDataState = pauseState;
+    }
+  }
+
+  const isPenlightOff = currentIndex === null || currentIndex === undefined;
+  const currentColor = isPenlightOff ? null : colors[currentIndex];
+  const currentColorCode = currentColor ? currentColor.code : null;
   if (
-    timeChanged &&
-    Number.isFinite(state.timeLeft) &&
-    state.timeLeft <= 10 &&
-    state.timeLeft >= 0
+    renderCache.currentIndex !== currentIndex ||
+    renderCache.penlightColor !== currentColorCode
   ) {
-    playCountdownBeep(state.timeLeft);
-  }
-  if (timeChanged) {
-    lastCountdownTime = state.timeLeft;
-  }
-
-  const isPenlightOff = state.currentIndex === null;
-  const currentColor = isPenlightOff ? null : colors[state.currentIndex];
-
-  const tube = penlight.querySelector(".penlight__tube");
-  if (isPenlightOff) {
-    penlight.classList.add("penlight--off");
-    penlight.style.setProperty("--tube-color", "#dbe1f2");
-    if (tube) {
-      tube.style.backgroundColor = "";
-      tube.style.boxShadow =
-        "inset 0 0 18px rgba(255,255,255,0.65), 0 12px 22px rgba(0,0,0,0.22)";
-    }
-    penlightLabel.textContent = t("penlight.off");
-    penlightLabel.style.color = "rgba(255,255,255,0.65)";
-    penlightLabel.style.textShadow = "none";
-    if (previewItems.length) {
-      previewItems.forEach((item) =>
-        item.classList.remove("preview-bar__item--active")
-      );
-    }
-  } else {
-    penlight.classList.remove("penlight--off");
-    penlight.style.setProperty("--tube-color", currentColor.code);
-    if (tube) {
-      tube.style.backgroundColor = currentColor.code;
-      tube.style.boxShadow = `0 18px 40px rgba(0,0,0,0.35), 0 0 32px ${hexToRgba(
-        currentColor.code,
-        0.55
-      )}`;
-    }
-    const labelColor = "#ffffff";
-    const labelShadow = "0 0 6px rgba(0,0,0,0.45)";
-    penlightLabel.textContent = currentColor.name;
-    penlightLabel.style.color = labelColor;
-    penlightLabel.style.textShadow = labelShadow;
-    if (previewItems.length) {
-      previewItems.forEach((item) =>
-        item.classList.toggle(
-          "preview-bar__item--active",
-          Number(item.dataset.colorIndex) === state.currentIndex
-        )
-      );
-    }
-  }
-
-  const feverColorCode = currentColor ? currentColor.code : null;
-  applyPenlightAppearance(feverPenlight, feverColorCode);
-  if (!state.fever.active) {
-    setFeverPenlightMotion(null);
-  }
-
-  targetColor.querySelector(".color-card__swatch").style.background =
-    colors[state.targetIndex].code;
-  targetColor.querySelector(".color-card__name").textContent =
-    colors[state.targetIndex].name;
-  targetColor.hidden = !!state.fever.active;
-
-  easyGuide.hidden = state.mode !== "easy";
-
-  const feverState = state.fever;
-  feverLayer.hidden = !(feverState && feverState.active);
-  const swingLabel = t("fever.countUnit");
-  const swingRoundTrips = Math.floor(((feverState && feverState.swingCount) || 0) / 2);
-  const rawStageLevel =
-    feverState && feverState.responseStage != null ? feverState.responseStage : 0;
-  const stageLevel = Math.max(0, rawStageLevel);
-  const stageText = t("fever.stage", { level: stageLevel });
-  feverCount.textContent = `${swingRoundTrips} ${swingLabel}`;
-  feverStage.textContent = stageText;
-  if (appealImageArea && appealImage) {
-    if (state.fever.active && stageLevel >= 1) {
-      const imageIndex = Math.min(stageLevel - 1, appealImageSources.length - 1);
-      const nextSrc = appealImageSources[imageIndex];
-      if (appealImage.getAttribute("src") !== nextSrc) {
-        appealImage.setAttribute("src", nextSrc);
+    const tube = penlight.querySelector(".penlight__tube");
+    if (isPenlightOff) {
+      penlight.classList.add("penlight--off");
+      penlight.style.setProperty("--tube-color", "#dbe1f2");
+      if (tube) {
+        tube.style.backgroundColor = "";
+        tube.style.boxShadow =
+          "inset 0 0 18px rgba(255,255,255,0.65), 0 12px 22px rgba(0,0,0,0.22)";
       }
-      appealImage.alt = stageText;
-      appealImageArea.hidden = false;
+      penlightLabel.textContent = t("penlight.off");
+      penlightLabel.style.color = "rgba(255,255,255,0.65)";
+      penlightLabel.style.textShadow = "none";
+      if (previewItems.length) {
+        previewItems.forEach((item) =>
+          item.classList.remove("preview-bar__item--active")
+        );
+      }
+    } else if (currentColor) {
+      penlight.classList.remove("penlight--off");
+      penlight.style.setProperty("--tube-color", currentColor.code);
+      if (tube) {
+        tube.style.backgroundColor = currentColor.code;
+        tube.style.boxShadow = `0 18px 40px rgba(0,0,0,0.35), 0 0 32px ${hexToRgba(
+          currentColor.code,
+          0.55
+        )}`;
+      }
+      penlightLabel.textContent = currentColor.name;
+      penlightLabel.style.color = "#ffffff";
+      penlightLabel.style.textShadow = "0 0 6px rgba(0,0,0,0.45)";
+      if (previewItems.length) {
+        previewItems.forEach((item) =>
+          item.classList.toggle(
+            "preview-bar__item--active",
+            Number(item.dataset.colorIndex) === currentIndex
+          )
+        );
+      }
+    }
+    applyPenlightAppearance(feverPenlight, currentColorCode);
+    renderCache.currentIndex = currentIndex;
+    renderCache.penlightColor = currentColorCode;
+  }
+
+  if (renderCache.mode !== mode) {
+    if (easyGuide) {
+      easyGuide.hidden = mode !== "easy";
+    }
+    renderCache.mode = mode;
+  }
+
+  const targetHidden = !!(fever && fever.active);
+  if (renderCache.targetHidden !== targetHidden && targetColor) {
+    targetColor.hidden = targetHidden;
+    renderCache.targetHidden = targetHidden;
+  }
+
+  if (!targetHidden && targetColor && colors[targetIndex]) {
+    const targetColorData = colors[targetIndex];
+    if (
+      renderCache.targetIndex !== targetIndex ||
+      renderCache.targetColorCode !== targetColorData.code ||
+      renderCache.targetName !== targetColorData.name
+    ) {
+      const swatch = targetColor.querySelector(".color-card__swatch");
+      const label = targetColor.querySelector(".color-card__name");
+      if (swatch) {
+        swatch.style.background = targetColorData.code;
+      }
+      if (label) {
+        label.textContent = targetColorData.name;
+      }
+      renderCache.targetIndex = targetIndex;
+      renderCache.targetColorCode = targetColorData.code;
+      renderCache.targetName = targetColorData.name;
+    }
+  }
+
+  const feverState = fever || {
+    active: false,
+    timeLeft: 10,
+    swingCount: 0,
+    responseStage: 0,
+  };
+  const feverActive = !!feverState.active;
+  if (renderCache.feverActive !== feverActive) {
+    if (feverLayer) {
+      feverLayer.hidden = !feverActive;
+    }
+    if (!feverActive) {
+      setFeverPenlightMotion(null);
+    }
+    renderCache.feverActive = feverActive;
+  }
+
+  const prevFeverTimeLeft = renderCache.feverTimeLeft;
+  const feverTimeLeft = feverActive ? feverState.timeLeft : null;
+  if (feverActive && feverTimeLeft != null && feverTime) {
+    if (prevFeverTimeLeft !== feverTimeLeft) {
+      feverTime.textContent = feverTimeLeft;
+      if (
+        Number.isFinite(feverTimeLeft) &&
+        feverTimeLeft <= 3 &&
+        feverTimeLeft >= 0 &&
+        lastFeverCountdownTime !== feverTimeLeft
+      ) {
+        playFeverCountdownChime(feverTimeLeft);
+      }
+      lastFeverCountdownTime = feverTimeLeft;
+    }
+  } else if (!feverActive) {
+    lastFeverCountdownTime = null;
+  }
+  renderCache.feverTimeLeft = feverActive ? feverTimeLeft : null;
+
+  const feverLowTime =
+    feverActive &&
+    Number.isFinite(feverTimeLeft) &&
+    feverTimeLeft <= 3 &&
+    feverTimeLeft >= 0;
+  if (renderCache.feverLowTimeActive !== feverLowTime && feverTimer) {
+    feverTimer.classList.toggle("fever__timer--glow", feverLowTime);
+    if (!feverLowTime) {
+      feverTimer.style.removeProperty("--fever-glow-speed");
+    }
+    renderCache.feverLowTimeActive = feverLowTime;
+  }
+  if (
+    feverLowTime &&
+    feverTimer &&
+    prevFeverTimeLeft !== feverTimeLeft &&
+    feverTimeLeft != null
+  ) {
+    const feverGlowSpeed = Math.max(
+      0.4,
+      Math.min(0.6, 0.4 + (feverTimeLeft / 10) * 0.2)
+    );
+    feverTimer.style.setProperty("--fever-glow-speed", `${feverGlowSpeed.toFixed(2)}s`);
+  }
+
+  const swingRoundTrips = Math.floor((feverState.swingCount || 0) / 2);
+  if (
+    renderCache.swingRoundTrips !== swingRoundTrips &&
+    feverCount
+  ) {
+    feverCount.textContent = `${swingRoundTrips} ${t("fever.countUnit")}`;
+    renderCache.swingRoundTrips = swingRoundTrips;
+  }
+
+  const stageLevel =
+    feverState && feverState.responseStage != null ? Math.max(0, feverState.responseStage) : 0;
+  if (renderCache.responseStage !== stageLevel && feverStage) {
+    feverStage.textContent = t("fever.stage", { level: stageLevel });
+    renderCache.responseStage = stageLevel;
+  }
+
+  if (appealImageArea && appealImage) {
+    const shouldShowAppeal = feverActive && stageLevel >= 1;
+    if (renderCache.appealVisible !== shouldShowAppeal || lastAppealLevel !== stageLevel) {
+      if (shouldShowAppeal) {
+        const imageIndex = Math.min(stageLevel - 1, appealImageSources.length - 1);
+        const nextSrc = appealImageSources[imageIndex];
+        if (appealImage.getAttribute("src") !== nextSrc) {
+          appealImage.setAttribute("src", nextSrc);
+        }
+        appealImage.alt = t("fever.stage", { level: stageLevel });
+        appealImageArea.hidden = false;
       appealImageArea.classList.add("is-visible");
-      const levelChanged = lastAppealLevel !== stageLevel;
-      if (levelChanged) {
-        appealImageArea.classList.remove("is-flash");
-        void appealImageArea.offsetWidth;
+      appealImageArea.classList.remove("is-flash");
+      requestAnimationFrame(() => {
         appealImageArea.classList.add("is-flash");
+      });
         const stars = appealImageArea.querySelector(".appeal-stars");
         if (stageLevel >= 4) {
           appealImageArea.classList.add("is-epic");
           if (stars) {
             stars.classList.remove("is-bursting");
-            void stars.offsetWidth;
+          requestAnimationFrame(() => {
             stars.classList.add("is-bursting");
+          });
           }
         } else {
           appealImageArea.classList.remove("is-epic");
@@ -593,58 +815,19 @@ function updateUI(state) {
           appealImageArea.classList.remove("is-flash");
         }, 700);
         lastAppealLevel = stageLevel;
+      } else {
+        appealImageArea.hidden = true;
+        appealImageArea.classList.remove("is-visible", "is-flash", "is-epic");
+        const stars = appealImageArea.querySelector(".appeal-stars");
+        if (stars) {
+          stars.classList.remove("is-bursting");
+        }
+        appealImage.removeAttribute("src");
+        appealImage.alt = "";
+        lastAppealLevel = null;
       }
-    } else {
-      appealImageArea.hidden = true;
-      appealImageArea.classList.remove("is-visible");
-      appealImageArea.classList.remove("is-flash", "is-epic");
-      const stars = appealImageArea.querySelector(".appeal-stars");
-      if (stars) {
-        stars.classList.remove("is-bursting");
-        void stars.offsetWidth;
-        stars.classList.remove("is-bursting");
-      }
-      appealImage.removeAttribute("src");
-      appealImage.alt = "";
-      lastAppealLevel = null;
+      renderCache.appealVisible = shouldShowAppeal;
     }
-  }
-  if (feverState && feverState.active) {
-    feverTime.textContent = feverState.timeLeft;
-  }
-  const feverLowTime =
-    feverState &&
-    feverState.active &&
-    Number.isFinite(feverState.timeLeft) &&
-    feverState.timeLeft <= 3;
-  if (feverTimer) {
-    feverTimer.classList.toggle("fever__timer--glow", feverLowTime);
-    if (feverLowTime) {
-      const feverGlowSpeed = Math.max(
-        0.4,
-        Math.min(0.6, 0.4 + (feverState.timeLeft / 10) * 0.2)
-      );
-      feverTimer.style.setProperty("--fever-glow-speed", `${feverGlowSpeed.toFixed(2)}s`);
-    } else {
-      feverTimer.style.removeProperty("--fever-glow-speed");
-    }
-  }
-  const currentFeverTime = feverState && feverState.timeLeft != null ? feverState.timeLeft : null;
-  const feverTimeChanged = lastFeverCountdownTime !== currentFeverTime;
-  if (feverState && feverState.active) {
-    if (
-      feverTimeChanged &&
-      Number.isFinite(feverState.timeLeft) &&
-      feverState.timeLeft <= 3 &&
-      feverState.timeLeft >= 0
-    ) {
-      playFeverCountdownChime(feverState.timeLeft);
-    }
-    if (feverTimeChanged) {
-      lastFeverCountdownTime = feverState.timeLeft;
-    }
-  } else {
-    lastFeverCountdownTime = null;
   }
 }
 
@@ -693,6 +876,8 @@ function showScreenPlay() {
   if (!isBgmUnlocked()) {
     unlockBgm(); // 初回のユーザー操作でBGM再生を解禁
   }
+  resetRenderCache();
+  resetRotationQueue();
   if (hudTimerItem) {
     hudTimerItem.classList.remove("is-countdown");
   }
@@ -789,7 +974,7 @@ function changeLanguage(lang) {
   updateLangButtons();
   restoreHistory();
   if (game && game.state) {
-    updateUI(game.state);
+    enqueueRender(game.state, { force: true });
   }
 }
 
@@ -802,26 +987,43 @@ function shareOnX() {
   window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, "_blank");
 }
 
+let stageToastElement = null;
+let stageToastHideTimeout = null;
+
 function showToast(message, variant = "success", options = {}) {
   const { placement = "global", duration = 1800 } = options;
-  const container =
-    placement === "stage" && stageToastLayer ? stageToastLayer : document.body;
-  const toast = document.createElement("div");
-  const extraClass =
-    placement === "stage"
-      ? ` toast--stage${
-          variant === "success"
-            ? message === t("toast.feverStart") || message === t("toast.feverEnd")
-              ? " toast--stage-success-pink"
-              : " toast--stage-success"
-            : ""
-        }`
-      : "";
-  toast.className = `toast toast--${variant}${extraClass}`;
-  toast.textContent = message;
+
   if (placement === "stage" && stageToastLayer) {
-    stageToastLayer.querySelectorAll(".toast").forEach((node) => node.remove());
+    if (!stageToastElement) {
+      stageToastElement = document.createElement("div");
+      stageToastLayer.appendChild(stageToastElement);
+    }
+    const classes = ["toast", `toast--${variant}`, "toast--stage"];
+    if (variant === "success") {
+      const isPink =
+        message === t("toast.feverStart") || message === t("toast.feverEnd");
+      classes.push(isPink ? "toast--stage-success-pink" : "toast--stage-success");
+    }
+    stageToastElement.className = classes.join(" ");
+    stageToastElement.textContent = message;
+    stageToastElement.classList.remove("is-visible");
+    void stageToastElement.offsetWidth;
+    stageToastElement.classList.add("is-visible");
+    if (stageToastHideTimeout) {
+      clearTimeout(stageToastHideTimeout);
+    }
+    stageToastHideTimeout = setTimeout(() => {
+      if (stageToastElement) {
+        stageToastElement.classList.remove("is-visible");
+      }
+    }, duration);
+    return;
   }
+
+  const container = document.body;
+  const toast = document.createElement("div");
+  toast.className = `toast toast--${variant}`;
+  toast.textContent = message;
   container.appendChild(toast);
   requestAnimationFrame(() => toast.classList.add("is-visible"));
   setTimeout(() => {
@@ -882,16 +1084,16 @@ function attachEventListeners() {
   bindTapSafeActivation(
     document.getElementById("btn-left"),
     () => {
-    playArrowSfx();
-    game.rotate(-1);
+      playArrowSfx();
+      queueRotation(-1);
     },
     { resumeAudio: resumeAudioContext }
   );
   bindTapSafeActivation(
     document.getElementById("btn-right"),
     () => {
-    playArrowSfx();
-    game.rotate(1);
+      playArrowSfx();
+      queueRotation(1);
     },
     { resumeAudio: resumeAudioContext }
   );
@@ -913,8 +1115,8 @@ function attachEventListeners() {
       return;
     }
     if (game.state.paused) return;
-    if (e.key === "ArrowLeft") game.rotate(-1);
-    if (e.key === "ArrowRight") game.rotate(1);
+    if (e.key === "ArrowLeft") queueRotation(-1);
+    if (e.key === "ArrowRight") queueRotation(1);
   });
 
   const feverZone = document.getElementById("fever-zone");
@@ -956,7 +1158,7 @@ function attachEventListeners() {
 
 function mountStore() {
   game.subscribe((state) => {
-    updateUI(state);
+    enqueueRender(state);
   });
 }
 

@@ -1,6 +1,33 @@
 const bgmTracks = [];
 const sfxBaseMap = {};
 const sfxBaseList = [];
+const sfxPoolMap = {};
+const sfxBufferPromises = {};
+const sfxBufferMap = {};
+const sfxGainNodes = {};
+const MAX_SFX_POOL_SIZE = 12;
+const MAX_ACTIVE_PER_NAME = 8;
+
+const createPooledInstance = (base, name) => {
+  const instance = base.cloneNode(true);
+  instance.preload = "auto";
+  instance.dataset.sfxName = name;
+  instance.addEventListener(
+    "ended",
+    () => {
+      instance.currentTime = 0;
+    },
+    { passive: true }
+  );
+  instance.addEventListener(
+    "error",
+    () => {
+      instance.currentTime = 0;
+    },
+    { passive: true }
+  );
+  return instance;
+};
 
 let audioContext = null;
 let menuBgm = null;
@@ -83,6 +110,146 @@ const getSfxBase = (name) => {
   return sfxBaseMap[name];
 };
 
+const ensureSfxBuffer = (name) => {
+  if (sfxBufferMap[name]) {
+    return Promise.resolve(sfxBufferMap[name]);
+  }
+  if (sfxBufferPromises[name]) {
+    return sfxBufferPromises[name];
+  }
+  const ctx = getOrCreateAudioContext();
+  const config = sfxConfig[name];
+  if (!ctx || !config) {
+    sfxBufferPromises[name] = Promise.resolve(null);
+    return sfxBufferPromises[name];
+  }
+  sfxBufferPromises[name] = fetch(config.src)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Failed to load SFX: ${config.src}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer))
+    .then((audioBuffer) => {
+      sfxBufferMap[name] = audioBuffer;
+      return audioBuffer;
+    })
+    .catch((error) => {
+      console.warn(`Failed to decode SFX "${name}":`, error);
+      return null;
+    });
+  return sfxBufferPromises[name];
+};
+
+const getSfxGainNode = (name) => {
+  const ctx = getOrCreateAudioContext();
+  if (!ctx) return null;
+  if (sfxGainNodes[name]?.node) {
+    return sfxGainNodes[name].node;
+  }
+  const config = sfxConfig[name] || {};
+  const gain = ctx.createGain();
+  gain.gain.value = isMuted ? 0 : config.volume ?? 1;
+  gain.connect(ctx.destination);
+  sfxGainNodes[name] = { node: gain };
+  return gain;
+};
+
+const playSfxWithWebAudio = (name) => {
+  const ctx = getOrCreateAudioContext();
+  const config = sfxConfig[name];
+  if (!ctx || !config) {
+    return false;
+  }
+  ensureSfxBuffer(name)
+    .then((buffer) => {
+      if (!buffer || isMuted) return;
+      const gainNode = getSfxGainNode(name);
+      if (!gainNode) return;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gainNode);
+      source.start();
+      source.addEventListener(
+        "ended",
+        () => {
+          try {
+            source.disconnect();
+          } catch (error) {
+            // ignore
+          }
+        },
+        { once: true }
+      );
+    })
+    .catch((error) => {
+      console.warn(`WebAudio playback failed for "${name}":`, error);
+    });
+  return true;
+};
+
+const getSfxInstance = (name) => {
+  const base = getSfxBase(name);
+  if (!base) return null;
+
+  if (!sfxPoolMap[name]) {
+    sfxPoolMap[name] = [];
+  }
+
+  const pool = sfxPoolMap[name];
+  let instance = pool.find(
+    (node) => node.paused || node.ended || node.currentTime === 0
+  );
+
+  if (!instance) {
+    if (pool.length < MAX_SFX_POOL_SIZE) {
+      instance = createPooledInstance(base, name);
+      pool.push(instance);
+    } else {
+      instance = pool.shift();
+      pool.push(instance);
+    }
+  }
+
+  if (!instance) return null;
+
+  const activeCount = pool.reduce(
+    (count, node) =>
+      !node.paused && !node.ended && node.currentTime > 0 ? count + 1 : count,
+    0
+  );
+  if (activeCount >= MAX_ACTIVE_PER_NAME) {
+    const oldestActive = pool.find(
+      (node) => !node.paused && !node.ended && node.currentTime > 0
+    );
+    if (oldestActive) {
+      try {
+        oldestActive.pause();
+      } catch (error) {
+        // ignore
+      }
+      oldestActive.currentTime = 0;
+      instance = oldestActive;
+    }
+  }
+
+  instance.volume = base.volume;
+  instance.muted = isMuted;
+  instance.currentTime = 0;
+
+  if (instance.paused === false) {
+    try {
+      instance.pause();
+    } catch (error) {
+      // ignore pause failure
+    }
+    instance.currentTime = 0;
+  }
+
+  return instance;
+};
+
 export const getOrCreateAudioContext = () => {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtx) return null;
@@ -107,17 +274,20 @@ const playSfx = (name, options = {}) => {
   if (options.resumeContext !== false) {
     resumeAudioContext();
   }
-  const base = getSfxBase(name);
-  if (!base) return;
-  const instance = base.cloneNode(true);
-  instance.volume = base.volume;
-  instance.muted = isMuted;
-  instance.currentTime = 0;
-  const playPromise = instance.play();
-  if (playPromise && typeof playPromise.catch === "function") {
-    playPromise.catch((error) => {
-      console.warn(`${name} SFX play blocked:`, error);
-    });
+  if (playSfxWithWebAudio(name)) {
+    return;
+  }
+  const instance = getSfxInstance(name);
+  if (!instance) return;
+  try {
+    const playPromise = instance.play();
+    if (playPromise && typeof playPromise.catch === "function") {
+      playPromise.catch((error) => {
+        console.warn(`${name} SFX play blocked:`, error);
+      });
+    }
+  } catch (error) {
+    console.warn(`${name} SFX play error:`, error);
   }
 };
 
@@ -127,6 +297,16 @@ const updateMuteStatus = () => {
   });
   sfxBaseList.forEach((track) => {
     track.muted = isMuted;
+  });
+  Object.values(sfxPoolMap).forEach((pool) => {
+    pool.forEach((node) => {
+      node.muted = isMuted;
+    });
+  });
+  Object.entries(sfxGainNodes).forEach(([name, gainRef]) => {
+    if (!gainRef || !gainRef.node) return;
+    const config = sfxConfig[name] || {};
+    gainRef.node.gain.value = isMuted ? 0 : config.volume ?? 1;
   });
   if (toggleButton) {
     toggleButton.textContent = isMuted ? "🔇" : "🔊";

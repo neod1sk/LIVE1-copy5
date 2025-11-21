@@ -1154,6 +1154,7 @@ function attachEventListeners() {
       });
     });
   }
+
 }
 
 function mountStore() {
